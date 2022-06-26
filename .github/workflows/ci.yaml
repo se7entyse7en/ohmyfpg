@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+env:
+  GIT_USER: ${{ secrets.GIT_USER }}
+  GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  check-and-lint:
+    name: Check and Lint
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: TODO
+        run: echo "TODO"
+
+  test:
+    name: Test on ${{ matrix.os }}
+    needs: [check-and-lint]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: TODO
+        run: echo "TODO"
+
+  tag:
+    name: Tag
+    needs: [test]
+    runs-on: ubuntu-latest
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    outputs:
+      version: ${{ steps.bump_version.outputs.tag_version }}
+      prerelease: ${{ steps.bump_version.outputs.prerelease }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+      - name: Setup git
+        run: |
+          set -eo pipefail
+          git config --global user.name "${GIT_USER}"
+          git config --global user.email "${GIT_EMAIL}"
+          git remote remove origin
+          git remote add origin "https://$(echo ${GITHUB_REPOSITORY} | cut -d "/" -f1):${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          set +eo pipefail
+      - name: Download semver
+        run: |
+          set -eo pipefail
+          curl \
+            -JLo semver.tar.gz \
+            "https://github.com/se7entyse7en/semver/releases/latest/download/ubuntu-latest.tar.gz"
+          mkdir semver && tar -xzvf semver.tar.gz -C semver
+          echo "${GITHUB_WORKSPACE}/semver/target/bins/ubuntu-latest" >> $GITHUB_PATH
+          set +eo pipefail
+      - name: Bump version
+        id: bump_version
+        run: |
+          set -eo pipefail
+          tags=$(git tag | wc -l)
+          if [ "$tags" -eq "0" ]; then
+            current_version="0.0.0"
+            echo "No tags available, bumping version ${current_version}!"
+            echo "::set-output name=tag_version::${current_version}"
+            echo "::set-output name=prerelease::false"
+          else
+            current_version=$(cat .semver.toml | grep current_version | head -n 1 | cut -c 20- | rev | cut -c 2- | rev)
+            latest_tag=$(git describe --tags --abbrev=0)
+            if [ "v${current_version}" != "${latest_tag}" ]; then
+              echo "Found new bumped version ${current_version}!"
+              echo "::set-output name=tag_version::${current_version}"
+              echo "::set-output name=prerelease::false"
+            else
+              echo "No new version found: bumping current one as a dev version"
+              current_is_dev=$(echo "${current_version}" | { grep dev || true; })
+              if [ "${current_is_dev}" == "" ]; then
+                semver bump -c .semver.toml --new-prerelease
+                new_version=$(cat .semver.toml | grep current_version | head -n 1 | cut -c 20- | rev | cut -c 2- | rev)
+                echo "Started a new prerelease: ${new_version}"
+              else
+                semver bump -c .semver.toml --part prerelease
+                new_version=$(cat .semver.toml | grep current_version | head -n 1 | cut -c 20- | rev | cut -c 2- | rev)
+                echo "Bumped to next prerelease: ${new_version}"
+              fi
+
+              git commit -asm "Bump version: ${current_version} → ${new_version}"
+              echo "::set-output name=tag_version::${new_version}"
+              echo "::set-output name=prerelease::true"
+            fi
+          fi
+          set +eo pipefail
+      - name: Create Tag
+        run: |
+          set -eo pipefail
+          new_version="${{steps.bump_version.outputs.tag_version}}"
+          git tag -a "v${new_version}" -m "Version ${new_version}";
+          set +eo pipefail
+      - name: Publish Branch and Tag
+        run: git push origin master && git push origin --tags
+
+  build-and-release:
+    name: Build and Release for ${{ matrix.os }}
+    needs: [tag]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+          - os: macos-latest
+          - os: windows-latest
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: TODO
+        run: echo "TODO"
