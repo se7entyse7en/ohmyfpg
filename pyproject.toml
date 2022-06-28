@@ -41,3 +41,13 @@ flake8-isort = "^4.1.1"
 flake8-builtins = "^1.5.3"
 pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
+
+[tool.isort]
+force_single_line = true
+order_by_type = true
+lines_after_imports = 2
+indent = "    "
+atomic = true
+sections = "STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+default_section = "THIRDPARTY"
+known_first_party = "ohmyfpg"
