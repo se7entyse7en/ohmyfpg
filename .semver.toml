@@ -11,6 +11,34 @@ replace = '''
 ## [v{new_version} - {utc_today_ymd}](https://github.com/se7entyse7en/semver/compare/v{last_stable_version}...v{new_version})'''
 stable_only = true
 
+[semver.files."pyproject.toml"]
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[semver.files."Cargo.toml"]
+search = '''
+[package]
+name = "ohmyfpg"
+version = "{current_version}"
+'''
+replace = '''
+[package]
+name = "ohmyfpg"
+version = "{new_version}"
+'''
+
+[semver.files."Cargo.lock"]
+search = '''
+[[package]]
+name = "ohmyfpg"
+version = "{current_version}"
+'''
+replace = '''
+[[package]]
+name = "ohmyfpg"
+version = "{new_version}"
+'''
+
 [semver.prerelease]
 bump_script = '''
 var PREFIX = "dev.";
