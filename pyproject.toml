@@ -17,3 +17,17 @@ classifiers = [
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
 
+# `project` and `tool.poetry` table are duplicated. See:
+#   - https://github.com/PyO3/maturin/issues/632
+#   - https://github.com/python-poetry/poetry/issues/3332
+[tool.poetry]
+name = "ohmyfpg"
+version = "0.0.0"
+description = "Oh My Fast Postgres!"
+authors = ["Lou Marvin Caraig <loumarvincaraig@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.7"
+
+[tool.poetry.dev-dependencies]
+maturin = "^0.12.20"
