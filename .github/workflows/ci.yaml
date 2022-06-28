@@ -199,19 +199,71 @@ jobs:
       - name: Publish Branch and Tag
         run: git push origin master && git push origin --tags
 
-  build-and-release:
-    name: Build and Release for ${{ matrix.os }}
+  build-linux:
+    name: Build for linux
     needs: [tag]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-          - os: macos-latest
-          - os: windows-latest
+    runs-on: ubuntu-latest
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: TODO
-        run: echo "TODO"
+    - uses: actions/checkout@v3
+    - uses: messense/maturin-action@v1
+      with:
+        manylinux: auto
+        command: build
+        args: --release -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: dist
+
+  build-windows:
+    name: Build for windows
+    needs: [tag]
+    runs-on: windows-latest
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    steps:
+    - uses: actions/checkout@v3
+    - uses: messense/maturin-action@v1
+      with:
+        command: build
+        args: --release --no-sdist -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: dist
+
+  build-macos:
+    name: Build for macos
+    needs: [tag]
+    runs-on: macos-latest
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    steps:
+    - uses: actions/checkout@v3
+    - uses: messense/maturin-action@v1
+      with:
+        command: build
+        args: --release --no-sdist -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: dist
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    needs: [build-macos, build-windows, build-linux]
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: wheels
+      - name: Publish to PyPI
+        uses: messense/maturin-action@v1
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        with:
+          command: upload
+          args: --skip-existing *
