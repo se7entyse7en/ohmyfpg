@@ -4,7 +4,13 @@ build-backend = "maturin"
 
 [project]
 name = "ohmyfpg"
+version = "0.0.0"
+description = "Oh My Fast Postgres!"
 requires-python = ">=3.7"
+authors = [{ name = "Lou Marvin Caraig", email = "loumarvincaraig@gmail.com" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+repository = "https://github.com/se7entyse7en/ohmyfpg"
 classifiers = [
     "Programming Language :: Rust",
     "Programming Language :: Python :: Implementation :: CPython",
