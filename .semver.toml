@@ -15,6 +15,10 @@ stable_only = true
 search = 'version = "{current_version}"'
 replace = 'version = "{new_version}"'
 
+[semver.files."python/ohmyfpg/__init__.py"]
+search = '__VERSION__ = "{current_version}"'
+replace = '__VERSION__ = "{new_version}"'
+
 [semver.files."Cargo.toml"]
 search = '''
 [package]
