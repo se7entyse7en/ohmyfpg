@@ -6,7 +6,7 @@ build-backend = "maturin"
 name = "ohmyfpg"
 version = "0.0.0"
 description = "Oh My Fast Postgres!"
-requires-python = ">=3.7"
+requires-python = ">=3.8"
 authors = [{ name = "Lou Marvin Caraig", email = "loumarvincaraig@gmail.com" }]
 license = { file = "LICENSE" }
 readme = "README.md"
@@ -27,7 +27,7 @@ description = "Oh My Fast Postgres!"
 authors = ["Lou Marvin Caraig <loumarvincaraig@gmail.com>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 
 [tool.poetry.dev-dependencies]
 maturin = "^0.12.20"
