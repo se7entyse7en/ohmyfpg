@@ -63,7 +63,6 @@ jobs:
         include:
           - os: ubuntu-latest
           - os: macos-latest
-          - os: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -97,12 +96,6 @@ jobs:
           - os: macos-latest
             python-version: '3.9'
           - os: macos-latest
-            python-version: '3.10'
-          - os: windows-latest
-            python-version: '3.8'
-          - os: windows-latest
-            python-version: '3.9'
-          - os: windows-latest
             python-version: '3.10'
     steps:
       - name: Checkout
@@ -227,33 +220,6 @@ jobs:
         name: wheels
         path: dist
 
-  build-windows:
-    name: "Build for windows (${{ matrix.python-version }})"
-    needs: [tag]
-    runs-on: windows-latest
-    strategy:
-      matrix:
-        include:
-          - python-version: '3.8'
-          - python-version: '3.9'
-          - python-version: '3.10'
-    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
-    steps:
-    - uses: actions/checkout@v3
-    - name: Setup python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - uses: messense/maturin-action@v1
-      with:
-        command: build
-        args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
-    - name: Upload wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: wheels
-        path: dist
-
   build-macos:
     name: "Build for macos (${{ matrix.python-version }})"
     needs: [tag]
@@ -285,7 +251,7 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
-    needs: [build-macos, build-windows, build-linux]
+    needs: [build-macos, build-linux]
     steps:
       - uses: actions/download-artifact@v2
         with:
