@@ -200,17 +200,27 @@ jobs:
         run: git push origin master && git push origin --tags
 
   build-linux:
-    name: Build for linux
+    name: "Build for linux (${{ matrix.python-version }})"
     needs: [tag]
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.8'
+          - python-version: '3.9'
+          - python-version: '3.10'
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
     - uses: actions/checkout@v3
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - uses: messense/maturin-action@v1
       with:
         manylinux: auto
         command: build
-        args: --release -o dist
+        args: --interpreter ${{ matrix.python-version }} --release -o dist
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
@@ -218,16 +228,26 @@ jobs:
         path: dist
 
   build-windows:
-    name: Build for windows
+    name: "Build for windows (${{ matrix.python-version }})"
     needs: [tag]
     runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.8'
+          - python-version: '3.9'
+          - python-version: '3.10'
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
     - uses: actions/checkout@v3
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - uses: messense/maturin-action@v1
       with:
         command: build
-        args: --release --no-sdist -o dist
+        args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
@@ -235,16 +255,26 @@ jobs:
         path: dist
 
   build-macos:
-    name: Build for macos
+    name: "Build for macos (${{ matrix.python-version }})"
     needs: [tag]
     runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.8'
+          - python-version: '3.9'
+          - python-version: '3.10'
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
     - uses: actions/checkout@v3
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - uses: messense/maturin-action@v1
       with:
         command: build
-        args: --release --no-sdist -o dist
+        args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
