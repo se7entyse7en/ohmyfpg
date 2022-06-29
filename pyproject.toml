@@ -1,0 +1,53 @@
+[build-system]
+requires = ["maturin>=0.12,<0.13"]
+build-backend = "maturin"
+
+[project]
+name = "ohmyfpg"
+version = "0.0.0"
+description = "Oh My Fast Postgres!"
+requires-python = ">=3.8"
+authors = [{ name = "Lou Marvin Caraig", email = "loumarvincaraig@gmail.com" }]
+license = { file = "LICENSE" }
+readme = "README.md"
+repository = "https://github.com/se7entyse7en/ohmyfpg"
+classifiers = [
+    "Programming Language :: Rust",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+
+# `project` and `tool.poetry` table are duplicated. See:
+#   - https://github.com/PyO3/maturin/issues/632
+#   - https://github.com/python-poetry/poetry/issues/3332
+[tool.poetry]
+name = "ohmyfpg"
+version = "0.0.0"
+description = "Oh My Fast Postgres!"
+authors = ["Lou Marvin Caraig <loumarvincaraig@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+
+[tool.poetry.dev-dependencies]
+maturin = "^0.12.20"
+isort = "^5.10.1"
+flake8 = "^4.0.1"
+black = "^22.6.0"
+flake8-docstrings = "^1.6.0"
+flake8-bugbear = "^22.6.22"
+flake8-commas = "^2.1.0"
+flake8-isort = "^4.1.1"
+flake8-builtins = "^1.5.3"
+pytest = "^7.1.2"
+pytest-cov = "^3.0.0"
+
+[tool.isort]
+force_single_line = true
+order_by_type = true
+lines_after_imports = 2
+indent = "    "
+atomic = true
+sections = "STDLIB,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
+default_section = "THIRDPARTY"
+known_first_party = "ohmyfpg"

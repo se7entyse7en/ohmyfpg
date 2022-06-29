@@ -7,39 +7,119 @@ on:
   pull_request:
 
 env:
+  POETRY_VIRTUALENVS_CREATE: false
   GIT_USER: ${{ secrets.GIT_USER }}
   GIT_EMAIL: ${{ secrets.GIT_EMAIL }}
   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
 jobs:
-  check-and-lint:
-    name: Check and Lint
+  check-and-lint-rust:
+    name: "[Rust] Check and Lint"
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: TODO
-        run: echo "TODO"
+        uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+          components: rustfmt, clippy
+      - name: Rustfmt
+        uses: actions-rs/cargo@v1
+        with:
+          command: fmt
+          args: --all -- --check
+      - name: Clippy
+        uses: actions-rs/cargo@v1
+        with:
+          command: clippy
+          args: --all-targets --all-features -- -D warnings
 
-  test:
-    name: Test on ${{ matrix.os }}
-    needs: [check-and-lint]
+  check-and-lint-python:
+    name: "[Python] Check and Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.10'
+      - name: Install poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install
+      - name: flake8
+        run: flake8 python/ --statistics;
+
+  test-rust:
+    name: "[Rust] Test on ${{ matrix.os }}"
+    needs: [check-and-lint-rust]
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         include:
           - os: ubuntu-latest
           - os: macos-latest
-          - os: windows-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
-      - name: TODO
-        run: echo "TODO"
+        uses: actions/checkout@v3
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
+      - name: Tests
+        uses: actions-rs/cargo@v1
+        with:
+          command: test
+          args: --all-features
+
+  test-python:
+    name: "[Python] Test on ${{ matrix.os }} (${{ matrix.python-version }})"
+    needs: [check-and-lint-python]
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            python-version: '3.8'
+          - os: ubuntu-latest
+            python-version: '3.9'
+          - os: ubuntu-latest
+            python-version: '3.10'
+          - os: macos-latest
+            python-version: '3.8'
+          - os: macos-latest
+            python-version: '3.9'
+          - os: macos-latest
+            python-version: '3.10'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+      - name: Setup python
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install poetry
+        run: pip install poetry
+      - name: Install dependencies
+        run: poetry install
+      - uses: messense/maturin-action@v1
+        with:
+          command: build
+          args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
+      - name: Install wheel
+        run: pip install dist/*
+      - name: pytest
+        run: pytest -vv --cov python/ohmyfpg/ python/tests/
 
   tag:
     name: Tag
-    needs: [test]
+    needs: [test-rust, test-python]
     runs-on: ubuntu-latest
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     outputs:
@@ -47,7 +127,7 @@ jobs:
       prerelease: ${{ steps.bump_version.outputs.prerelease }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
       - name: Setup git
@@ -112,19 +192,74 @@ jobs:
       - name: Publish Branch and Tag
         run: git push origin master && git push origin --tags
 
-  build-and-release:
-    name: Build and Release for ${{ matrix.os }}
+  build-linux:
+    name: "Build for linux (${{ matrix.python-version }})"
     needs: [tag]
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         include:
-          - os: ubuntu-latest
-          - os: macos-latest
-          - os: windows-latest
+          - python-version: '3.8'
+          - python-version: '3.9'
+          - python-version: '3.10'
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
-      - name: Checkout
-        uses: actions/checkout@v2
-      - name: TODO
-        run: echo "TODO"
+    - uses: actions/checkout@v3
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: messense/maturin-action@v1
+      with:
+        manylinux: auto
+        command: build
+        args: --interpreter ${{ matrix.python-version }} --release -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: dist
+
+  build-macos:
+    name: "Build for macos (${{ matrix.python-version }})"
+    needs: [tag]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          - python-version: '3.8'
+          - python-version: '3.9'
+          - python-version: '3.10'
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    steps:
+    - uses: actions/checkout@v3
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: messense/maturin-action@v1
+      with:
+        command: build
+        args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: dist
+
+  publish:
+    name: Publish
+    runs-on: ubuntu-latest
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    needs: [build-macos, build-linux]
+    steps:
+      - uses: actions/download-artifact@v2
+        with:
+          name: wheels
+      - name: Publish to PyPI
+        uses: messense/maturin-action@v1
+        env:
+          MATURIN_PYPI_TOKEN: ${{ secrets.PYPI_TOKEN }}
+        with:
+          command: upload
+          args: --skip-existing *
