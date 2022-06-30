@@ -205,6 +205,8 @@ jobs:
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: 'master'
     - name: Setup python
       uses: actions/setup-python@v2
       with:
@@ -233,6 +235,8 @@ jobs:
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
     steps:
     - uses: actions/checkout@v3
+      with:
+        ref: 'master'
     - name: Setup python
       uses: actions/setup-python@v2
       with:
@@ -254,6 +258,8 @@ jobs:
     needs: [build-macos, build-linux]
     steps:
       - uses: actions/checkout@v3
+        with:
+          ref: 'master'
       - uses: actions/download-artifact@v2
         with:
           name: wheels
