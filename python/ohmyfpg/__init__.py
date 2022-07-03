@@ -5,6 +5,6 @@ __DESCRIPTION__ = "Oh My Fast Postgres!"
 from ohmyfpg import ohmyfpg
 
 
-def py_sum_as_string(a: int, b: int):
-    """Proxy to call Rust implmentation of `sum_as_string`."""
-    return ohmyfpg.sum_as_string(a, b)
+async def connect(dsn: str) -> ohmyfpg.Connection:
+    """Connect to the given `dsn`."""
+    return await ohmyfpg.connect(dsn)
