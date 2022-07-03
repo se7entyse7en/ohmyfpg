@@ -10,6 +10,8 @@ crate-type = ["cdylib"]
 
 [dependencies]
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
+pyo3-asyncio = { version = "0.16", features = ["tokio-runtime"] }
+tokio = { version = "1.19.2" }
 
 [package.metadata.maturin]
 python-source = "python"
