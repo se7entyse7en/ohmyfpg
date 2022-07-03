@@ -1,14 +1,27 @@
 use pyo3::prelude::*;
+use tokio::net::TcpStream;
 
-/// Formats the sum of two numbers as string.
+#[pyclass]
+pub struct Connection {
+    _stream: TcpStream,
+}
+
+/// Returns a `Connection` object
 #[pyfunction]
-fn sum_as_string(a: usize, b: usize) -> PyResult<String> {
-    Ok((a + b).to_string())
+fn connect(py: Python, dsn: String) -> PyResult<&PyAny> {
+    pyo3_asyncio::tokio::future_into_py(py, async move {
+        println!("Connecting to {}...", dsn);
+        let stream = TcpStream::connect(dsn).await?;
+        println!("Connected");
+        let connection = Connection { _stream: stream };
+        Ok(connection)
+    })
 }
 
 /// A Python module implemented in Rust.
 #[pymodule]
 fn ohmyfpg(_py: Python, m: &PyModule) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(sum_as_string, m)?)?;
+    m.add_class::<Connection>()?;
+    m.add_function(wrap_pyfunction!(connect, m)?)?;
     Ok(())
 }
