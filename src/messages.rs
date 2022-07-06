@@ -1,5 +1,7 @@
 mod startup;
 pub use startup::StartupMessage;
+mod authentication;
+pub use authentication::AuthenticationSASL;
 
 pub trait Message: Sized {
     fn serialize(self) -> Vec<u8> {
