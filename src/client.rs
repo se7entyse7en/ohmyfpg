@@ -1,7 +1,7 @@
-use crate::messages::StartupMessage;
+use crate::messages::{Message, StartupMessage};
 use regex::Regex;
 use std::{error, fmt, io};
-use tokio::io::AsyncWriteExt;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
 
 const PATTERN: &str = r"^(?P<driver>postgres(ql)?)://(((?P<user>[\w\d]+)?(:(?P<password>[^@/:\s]+))?@)?(?P<netloc>[\w\d]+)(:(?P<port>\d+))?/?(?P<dbname>[\w\d]+)?(\?)?(?P<params>.*))?$";
@@ -113,6 +113,12 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     }
     let msg = StartupMessage::new(params);
     stream.write_all(&msg.serialize()).await?;
+
+    let mut buffer = Vec::new();
+    stream.read_to_end(&mut buffer).await?;
+
+    println!("Test: {:?}", buffer);
+
     let connection = Connection { _stream: stream };
     Ok(connection)
 }

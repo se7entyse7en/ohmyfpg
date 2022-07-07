@@ -1,6 +1,8 @@
 #[cfg(test)]
 mod tests;
 
+use crate::messages::{Message, MessageBytesSerialize};
+
 static PROTOCOL_MAJOR_VALUE: u16 = 3;
 static PROTOCOL_MINOR_VALUE: u16 = 0;
 
@@ -17,31 +19,21 @@ impl StartupMessage {
             params,
         }
     }
+}
 
-    pub fn serialize(self) -> Vec<u8> {
-        let mut bytes = Vec::new();
-
-        let mut version_bytes = [self.version.0.to_be_bytes(), self.version.1.to_be_bytes()]
+impl Message for StartupMessage {
+    fn serialize_body(self) -> Vec<u8> {
+        let mut body = [self.version.0.to_msg_bytes(), self.version.1.to_msg_bytes()]
             .concat()
             .to_vec();
 
-        let mut params_bytes = Vec::new();
+        let mut params = Vec::new();
         for param in self.params.into_iter() {
-            params_bytes.append(&mut param.0.into_bytes());
-            params_bytes.push(0x00);
-            params_bytes.append(&mut param.1.into_bytes());
-            params_bytes.push(0x00);
+            params.append(&mut param.0.to_msg_bytes());
+            params.append(&mut param.1.to_msg_bytes());
         }
-        params_bytes.push(0x00);
-
-        let length: u32 = (4 + version_bytes.len() + params_bytes.len())
-            .try_into()
-            .unwrap();
-
-        bytes.append(&mut length.to_be_bytes().to_vec());
-        bytes.append(&mut version_bytes);
-        bytes.append(&mut params_bytes);
-
-        bytes
+        params.push(0x00);
+        body.append(&mut params);
+        body
     }
 }
