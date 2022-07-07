@@ -110,10 +110,16 @@ jobs:
         run: pip install poetry
       - name: Install dependencies
         run: poetry install
+      - name: Install Rust toolchain
+        uses: actions-rs/toolchain@v1
+        with:
+          profile: minimal
+          toolchain: stable
+          override: true
       - uses: messense/maturin-action@v1
         with:
           command: build
-          args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
+          args: --interpreter ${{ matrix.python-version }} --no-sdist -o dist
       - name: Install wheel
         run: pip install dist/*
       - name: pytest
