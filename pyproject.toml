@@ -4,7 +4,7 @@ build-backend = "maturin"
 
 [project]
 name = "ohmyfpg"
-version = "0.1.0-dev.8"
+version = "0.1.0-dev.9"
 description = "Oh My Fast Postgres!"
 requires-python = ">=3.8"
 authors = [{ name = "Lou Marvin Caraig", email = "loumarvincaraig@gmail.com" }]
@@ -22,7 +22,7 @@ classifiers = [
 #   - https://github.com/python-poetry/poetry/issues/3332
 [tool.poetry]
 name = "ohmyfpg"
-version = "0.1.0-dev.8"
+version = "0.1.0-dev.9"
 description = "Oh My Fast Postgres!"
 authors = ["Lou Marvin Caraig <loumarvincaraig@gmail.com>"]
 
