@@ -200,8 +200,8 @@ jobs:
       - name: Publish Branch and Tag
         run: git push origin master && git push origin --tags
 
-  build:
-    name: "Build (${{ matrix.python-version }})"
+  build-linux:
+    name: "Build for linux (${{ matrix.python-version }})"
     needs: [tag]
     runs-on: ubuntu-latest
     strategy:
@@ -220,24 +220,40 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install Rust toolchain
-      uses: actions-rs/toolchain@v1
-      with:
-        profile: minimal
-        toolchain: stable
-        override: true
-        target: x86_64-apple-darwin
-    - name: Build for Linux
-      uses: messense/maturin-action@v1
+    - uses: messense/maturin-action@v1
       with:
         manylinux: auto
         command: build
         args: --interpreter ${{ matrix.python-version }} --release -o dist
-    - name: Build for OSX (cross-build)
-      uses: messense/maturin-action@v1
+    - name: Upload wheels
+      uses: actions/upload-artifact@v2
+      with:
+        name: wheels
+        path: dist
+
+  build-macos:
+    name: "Build for macos (${{ matrix.python-version }})"
+    needs: [tag]
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        include:
+          # TODO: Temporary disabled to save minutes. Re-enable once public.
+          # - python-version: '3.8'
+          # - python-version: '3.9'
+          - python-version: '3.10'
+    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        ref: 'master'
+    - name: Setup python
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - uses: messense/maturin-action@v1
       with:
         command: build
-        target: x86_64-apple-darwin
         args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
     - name: Upload wheels
       uses: actions/upload-artifact@v2
@@ -249,17 +265,11 @@ jobs:
     name: Publish
     runs-on: ubuntu-latest
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
-    needs: [build]
+    needs: [build-macos, build-linux]
     steps:
       - uses: actions/download-artifact@v2
         with:
           name: wheels
-      - name: Install Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          profile: minimal
-          toolchain: stable
-          override: true
       - name: Publish to PyPI
         uses: messense/maturin-action@v1
         env:
