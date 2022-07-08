@@ -48,3 +48,16 @@ impl MessageBytesSerialize for u32 {
         self.to_be_bytes().to_vec()
     }
 }
+
+#[derive(Debug)]
+pub struct RawMessage {
+    pub type_: [u8; 1],
+    pub count: [u8; 4],
+    pub body: Vec<u8>,
+}
+
+impl RawMessage {
+    pub fn new(type_: [u8; 1], count: [u8; 4], body: Vec<u8>) -> Self {
+        RawMessage { type_, count, body }
+    }
+}
