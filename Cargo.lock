@@ -194,7 +194,7 @@ dependencies = [
 
 [[package]]
 name = "ohmyfpg"
-version = "0.1.0-dev.9"
+version = "0.1.0-dev.10"
 dependencies = [
  "futures",
  "pyo3",
