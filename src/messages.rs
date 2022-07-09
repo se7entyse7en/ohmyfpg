@@ -25,6 +25,10 @@ pub trait SerializeMessage: Sized {
     fn serialize_body(self) -> Vec<u8>;
 }
 
+pub trait DeserializeMessage {
+    fn deserialize_body(body: Vec<u8>) -> Self;
+}
+
 pub trait SerializeMessageBytes {
     fn to_msg_bytes(self) -> Vec<u8>;
 }
