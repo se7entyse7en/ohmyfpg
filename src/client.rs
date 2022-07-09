@@ -173,6 +173,7 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
             let next_msg = SASLInitialResponse::new(mechanism, user);
             connection.write_message(next_msg).await?;
         }
+        _ => todo!("Non-SASL auth"),
     }
 
     let msg_back = connection.read_message().await?;

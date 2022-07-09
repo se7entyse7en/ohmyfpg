@@ -1,7 +1,7 @@
 pub mod authentication;
 pub mod startup;
 use crate::client::MessageReadError;
-use authentication::AuthenticationSASL;
+use authentication::{AuthenticationSASL, AuthenticationSASLContinue};
 
 pub trait SerializeMessage: Sized {
     fn serialize(self) -> Vec<u8> {
@@ -56,14 +56,29 @@ impl SerializeMessageBytes for u32 {
 #[derive(Debug)]
 pub enum BackendMessage {
     AuthenticationSASL(AuthenticationSASL),
+    AuthenticationSASLContinue(AuthenticationSASLContinue),
 }
 
 impl BackendMessage {
     pub fn parse(type_: [u8; 1], _count: [u8; 4], body: Vec<u8>) -> Result<Self, MessageReadError> {
         match &type_ {
-            authentication::AUTH_MESSAGE_TYPE => Ok(BackendMessage::AuthenticationSASL(
-                AuthenticationSASL::deserialize_body(body),
-            )),
+            authentication::AUTH_MESSAGE_TYPE => {
+                let raw_sub_type: [u8; 4] = body[..4].try_into().unwrap();
+                let sub_type = u32::from_be_bytes(raw_sub_type);
+                match sub_type {
+                    10_u32 => Ok(BackendMessage::AuthenticationSASL(
+                        AuthenticationSASL::deserialize_body(body),
+                    )),
+                    11_u32 => Ok(BackendMessage::AuthenticationSASLContinue(
+                        AuthenticationSASLContinue::deserialize_body(body),
+                    )),
+                    _ => Err(MessageReadError::UnrecognizedMessage(format!(
+                        "{},{}",
+                        String::from_utf8(type_.to_vec()).unwrap(),
+                        sub_type
+                    ))),
+                }
+            }
             _ => Err(MessageReadError::UnrecognizedMessage(
                 String::from_utf8(type_.to_vec()).unwrap(),
             )),
