@@ -65,3 +65,8 @@ impl RawMessage {
         RawMessage { type_, count, body }
     }
 }
+
+#[derive(Debug)]
+pub enum BackendMessage {
+    AuthenticationSASL(AuthenticationSASL),
+}
