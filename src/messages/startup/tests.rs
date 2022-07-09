@@ -1,4 +1,4 @@
-use crate::messages::{Message, StartupMessage};
+use crate::messages::{SerializeMessage, StartupMessage};
 
 #[test]
 fn test_serialize() {

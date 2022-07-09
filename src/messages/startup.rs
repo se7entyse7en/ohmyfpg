@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::messages::{Message, MessageBytesSerialize};
+use crate::messages::{SerializeMessage, SerializeMessageBytes};
 
 static PROTOCOL_MAJOR_VALUE: u16 = 3;
 static PROTOCOL_MINOR_VALUE: u16 = 0;
@@ -21,7 +21,7 @@ impl StartupMessage {
     }
 }
 
-impl Message for StartupMessage {
+impl SerializeMessage for StartupMessage {
     fn serialize_body(self) -> Vec<u8> {
         let mut body = [self.version.0.to_msg_bytes(), self.version.1.to_msg_bytes()]
             .concat()

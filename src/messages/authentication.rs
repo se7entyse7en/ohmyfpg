@@ -1,7 +1,7 @@
 #[cfg(test)]
 mod tests;
 
-use crate::messages::{Message, MessageBytesSerialize};
+use crate::messages::{SerializeMessage, SerializeMessageBytes};
 
 static MESSAGE_TYPE: &[u8; 1] = b"R";
 
@@ -16,7 +16,7 @@ impl AuthenticationSASL {
     }
 }
 
-impl Message for AuthenticationSASL {
+impl SerializeMessage for AuthenticationSASL {
     fn get_msg_type(&self) -> Option<&[u8; 1]> {
         Some(MESSAGE_TYPE)
     }

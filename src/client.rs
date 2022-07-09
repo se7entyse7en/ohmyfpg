@@ -1,4 +1,4 @@
-use crate::messages::{Message, RawMessage, StartupMessage};
+use crate::messages::{RawMessage, SerializeMessage, StartupMessage};
 use regex::Regex;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -103,7 +103,7 @@ pub struct Connection {
 impl Connection {
     pub async fn write_message<T>(&mut self, msg: T) -> Result<(), std::io::Error>
     where
-        T: Message,
+        T: SerializeMessage,
     {
         self.stream.write_all(&msg.serialize()).await
     }

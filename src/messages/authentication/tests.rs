@@ -1,4 +1,4 @@
-use crate::messages::{AuthenticationSASL, Message};
+use crate::messages::{AuthenticationSASL, SerializeMessage};
 
 #[test]
 fn test_serialize() {
