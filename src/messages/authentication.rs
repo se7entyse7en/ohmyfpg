@@ -5,8 +5,7 @@ use crate::messages::DeserializeMessage;
 #[cfg(test)]
 use crate::messages::{SerializeMessage, SerializeMessageBytes};
 
-#[cfg(test)]
-static MESSAGE_TYPE: &[u8; 1] = b"R";
+pub const MESSAGE_TYPE: &[u8; 1] = b"R";
 
 #[derive(Debug)]
 pub struct AuthenticationSASL {

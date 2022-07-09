@@ -1,4 +1,6 @@
-use crate::messages::{RawMessage, SerializeMessage, StartupMessage};
+use crate::messages::authentication::{self, AuthenticationSASL};
+use crate::messages::startup::StartupMessage;
+use crate::messages::{BackendMessage, DeserializeMessage, SerializeMessage};
 use regex::Regex;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -41,6 +43,7 @@ impl error::Error for InvalidDSNError {}
 #[derive(Debug)]
 pub enum ConnectionError {
     InvalidDSNError(InvalidDSNError),
+    UnrecognizedMessage(String),
     IOError(io::Error),
 }
 
@@ -49,6 +52,9 @@ impl fmt::Display for ConnectionError {
         match self {
             ConnectionError::InvalidDSNError(err) => write!(f, "Invalid DSM: {}", err),
             ConnectionError::IOError(err) => write!(f, "IO Error: {}", err),
+            ConnectionError::UnrecognizedMessage(msg_type) => {
+                write!(f, "Unrecognized message type: {}", msg_type)
+            }
         }
     }
 }
@@ -64,6 +70,29 @@ impl From<io::Error> for ConnectionError {
 impl From<InvalidDSNError> for ConnectionError {
     fn from(err: InvalidDSNError) -> Self {
         ConnectionError::InvalidDSNError(err)
+    }
+}
+
+impl From<MessageReadError> for ConnectionError {
+    fn from(err: MessageReadError) -> Self {
+        match err {
+            MessageReadError::UnrecognizedMessage(msg_type) => {
+                ConnectionError::UnrecognizedMessage(msg_type)
+            }
+            MessageReadError::IOError(err) => ConnectionError::IOError(err),
+        }
+    }
+}
+
+#[derive(Debug)]
+pub enum MessageReadError {
+    UnrecognizedMessage(String),
+    IOError(io::Error),
+}
+
+impl From<io::Error> for MessageReadError {
+    fn from(err: io::Error) -> Self {
+        MessageReadError::IOError(err)
     }
 }
 
@@ -101,21 +130,28 @@ pub struct Connection {
 }
 
 impl Connection {
-    pub async fn write_message<T>(&mut self, msg: T) -> Result<(), std::io::Error>
+    pub async fn write_message<T>(&mut self, msg: T) -> Result<(), io::Error>
     where
         T: SerializeMessage,
     {
         self.stream.write_all(&msg.serialize()).await
     }
 
-    pub async fn read_message(&mut self) -> Result<RawMessage, std::io::Error> {
+    pub async fn read_message(&mut self) -> Result<BackendMessage, MessageReadError> {
         let mut header = [0u8; 5];
         self.stream.read_exact(&mut header).await?;
         let type_: [u8; 1] = header[0..1].try_into().unwrap();
         let count: [u8; 4] = header[1..5].try_into().unwrap();
         let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
         self.stream.read_exact(&mut body).await?;
-        Ok(RawMessage::new(type_, count, body))
+        match &type_ {
+            authentication::MESSAGE_TYPE => Ok(BackendMessage::AuthenticationSASL(
+                AuthenticationSASL::deserialize_body(body),
+            )),
+            _ => Err(MessageReadError::UnrecognizedMessage(
+                String::from_utf8(type_.to_vec()).unwrap(),
+            )),
+        }
     }
 }
 

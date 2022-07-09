@@ -1,4 +1,5 @@
-use crate::messages::{AuthenticationSASL, DeserializeMessage, SerializeMessage};
+use crate::messages::authentication::AuthenticationSASL;
+use crate::messages::{DeserializeMessage, SerializeMessage};
 
 #[test]
 fn test_serialize_deserialize() {

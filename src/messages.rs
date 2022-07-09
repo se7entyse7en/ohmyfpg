@@ -1,7 +1,6 @@
-mod startup;
-pub use startup::StartupMessage;
-mod authentication;
-pub use authentication::AuthenticationSASL;
+pub mod authentication;
+pub mod startup;
+use authentication::AuthenticationSASL;
 
 pub trait SerializeMessage: Sized {
     fn serialize(self) -> Vec<u8> {
@@ -50,19 +49,6 @@ impl SerializeMessageBytes for u16 {
 impl SerializeMessageBytes for u32 {
     fn to_msg_bytes(self) -> Vec<u8> {
         self.to_be_bytes().to_vec()
-    }
-}
-
-#[derive(Debug)]
-pub struct RawMessage {
-    pub type_: [u8; 1],
-    pub count: [u8; 4],
-    pub body: Vec<u8>,
-}
-
-impl RawMessage {
-    pub fn new(type_: [u8; 1], count: [u8; 4], body: Vec<u8>) -> Self {
-        RawMessage { type_, count, body }
     }
 }
 

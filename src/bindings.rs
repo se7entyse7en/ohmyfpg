@@ -5,6 +5,12 @@ use pyo3::exceptions::{PyException, PyOSError};
 use pyo3::prelude::*;
 
 create_exception!(ohmyfpg, PyInvalidDSNError, PyException, "Invalid DSN.");
+create_exception!(
+    ohmyfpg,
+    PyUnrecognizedMessageError,
+    PyException,
+    "Unrecognized message."
+);
 
 /// Connect to the database and return a `Connection` object.
 #[pyfunction]
@@ -32,6 +38,9 @@ impl From<ConnectionError> for PyErr {
         match err {
             ConnectionError::InvalidDSNError(err) => PyInvalidDSNError::new_err(err.to_string()),
             ConnectionError::IOError(err) => PyOSError::new_err(err.to_string()),
+            ConnectionError::UnrecognizedMessage(msg_type) => {
+                PyUnrecognizedMessageError::new_err(msg_type)
+            }
         }
     }
 }
