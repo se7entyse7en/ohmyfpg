@@ -1,4 +1,4 @@
-use crate::messages::{Message, StartupMessage};
+use crate::messages::{Message, RawMessage, StartupMessage};
 use regex::Regex;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -97,14 +97,34 @@ pub fn parse_dsn(dsn: &str) -> Result<DSN, InvalidDSNError> {
 }
 
 pub struct Connection {
-    _stream: TcpStream,
+    stream: TcpStream,
+}
+
+impl Connection {
+    pub async fn write_message<T>(&mut self, msg: T) -> Result<(), std::io::Error>
+    where
+        T: Message,
+    {
+        self.stream.write_all(&msg.serialize()).await
+    }
+
+    pub async fn read_message(&mut self) -> Result<RawMessage, std::io::Error> {
+        let mut header = [0u8; 5];
+        self.stream.read_exact(&mut header).await?;
+        let type_: [u8; 1] = header[0..1].try_into().unwrap();
+        let count: [u8; 4] = header[1..5].try_into().unwrap();
+        let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
+        self.stream.read_exact(&mut body).await?;
+        Ok(RawMessage::new(type_, count, body))
+    }
 }
 
 pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     let parsed_dsn = parse_dsn(&dsn)?;
     let address = parsed_dsn.address;
     println!("Connecting to {}...", address);
-    let mut stream = TcpStream::connect(address).await?;
+    let stream = TcpStream::connect(address).await?;
+    let mut connection = Connection { stream };
     println!("Connected");
     let mut params = vec![("user".to_owned(), parsed_dsn.user)];
     match parsed_dsn.dbname {
@@ -112,13 +132,9 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
         None => (),
     }
     let msg = StartupMessage::new(params);
-    stream.write_all(&msg.serialize()).await?;
+    connection.write_message(msg).await?;
+    let msg = connection.read_message().await?;
+    println!("Message: {:?}", msg);
 
-    let mut buffer = Vec::new();
-    stream.read_to_end(&mut buffer).await?;
-
-    println!("Test: {:?}", buffer);
-
-    let connection = Connection { _stream: stream };
     Ok(connection)
 }
