@@ -3,7 +3,7 @@ pub use startup::StartupMessage;
 mod authentication;
 pub use authentication::AuthenticationSASL;
 
-pub trait Message: Sized {
+pub trait SerializeMessage: Sized {
     fn serialize(self) -> Vec<u8> {
         let mut ser = self.serialize_msg_type().unwrap_or_default();
         let mut body = self.serialize_body();
@@ -25,11 +25,15 @@ pub trait Message: Sized {
     fn serialize_body(self) -> Vec<u8>;
 }
 
-pub trait MessageBytesSerialize {
+pub trait DeserializeMessage {
+    fn deserialize_body(body: Vec<u8>) -> Self;
+}
+
+pub trait SerializeMessageBytes {
     fn to_msg_bytes(self) -> Vec<u8>;
 }
 
-impl MessageBytesSerialize for String {
+impl SerializeMessageBytes for String {
     fn to_msg_bytes(self) -> Vec<u8> {
         let mut ser = self.into_bytes();
         ser.push(0x00);
@@ -37,14 +41,27 @@ impl MessageBytesSerialize for String {
     }
 }
 
-impl MessageBytesSerialize for u16 {
+impl SerializeMessageBytes for u16 {
     fn to_msg_bytes(self) -> Vec<u8> {
         self.to_be_bytes().to_vec()
     }
 }
 
-impl MessageBytesSerialize for u32 {
+impl SerializeMessageBytes for u32 {
     fn to_msg_bytes(self) -> Vec<u8> {
         self.to_be_bytes().to_vec()
+    }
+}
+
+#[derive(Debug)]
+pub struct RawMessage {
+    pub type_: [u8; 1],
+    pub count: [u8; 4],
+    pub body: Vec<u8>,
+}
+
+impl RawMessage {
+    pub fn new(type_: [u8; 1], count: [u8; 4], body: Vec<u8>) -> Self {
+        RawMessage { type_, count, body }
     }
 }

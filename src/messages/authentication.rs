@@ -1,8 +1,11 @@
 #[cfg(test)]
 mod tests;
 
-use crate::messages::{Message, MessageBytesSerialize};
+use crate::messages::DeserializeMessage;
+#[cfg(test)]
+use crate::messages::{SerializeMessage, SerializeMessageBytes};
 
+#[cfg(test)]
 static MESSAGE_TYPE: &[u8; 1] = b"R";
 
 #[derive(Debug)]
@@ -16,7 +19,8 @@ impl AuthenticationSASL {
     }
 }
 
-impl Message for AuthenticationSASL {
+#[cfg(test)]
+impl SerializeMessage for AuthenticationSASL {
     fn get_msg_type(&self) -> Option<&[u8; 1]> {
         Some(MESSAGE_TYPE)
     }
@@ -29,5 +33,19 @@ impl Message for AuthenticationSASL {
 
         body.push(0x00);
         body
+    }
+}
+
+impl DeserializeMessage for AuthenticationSASL {
+    fn deserialize_body(body: Vec<u8>) -> Self {
+        let mut mechanisms = Vec::new();
+        let iter = body[4..]
+            .split(|b| *b == 0)
+            .filter(|chunk| !chunk.is_empty());
+        for chunk in iter {
+            mechanisms.push(String::from_utf8(chunk.to_vec()).unwrap());
+        }
+
+        AuthenticationSASL::new(mechanisms)
     }
 }
