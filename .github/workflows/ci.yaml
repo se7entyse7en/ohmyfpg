@@ -62,7 +62,8 @@ jobs:
       matrix:
         include:
           - os: ubuntu-latest
-          - os: macos-latest
+          # TODO: Temporary disabled to save minutes. Re-enable once public.
+          # - os: macos-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -97,8 +98,8 @@ jobs:
           #   python-version: '3.8'
           # - os: macos-latest
           #   python-version: '3.9'
-          - os: macos-latest
-            python-version: '3.10'
+          # - os: macos-latest
+          #   python-version: '3.10'
     steps:
       - name: Checkout
         uses: actions/checkout@v3
@@ -231,41 +232,43 @@ jobs:
         name: wheels
         path: dist
 
-  build-macos:
-    name: "Build for macos (${{ matrix.python-version }})"
-    needs: [tag]
-    runs-on: macos-latest
-    strategy:
-      matrix:
-        include:
-          # TODO: Temporary disabled to save minutes. Re-enable once public.
-          # - python-version: '3.8'
-          # - python-version: '3.9'
-          - python-version: '3.10'
-    if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        ref: 'master'
-    - name: Setup python
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-    - uses: messense/maturin-action@v1
-      with:
-        command: build
-        args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
-    - name: Upload wheels
-      uses: actions/upload-artifact@v2
-      with:
-        name: wheels
-        path: dist
+  # TODO: Temporary disabled to save minutes. Re-enable once public.
+  # build-macos:
+  #   name: "Build for macos (${{ matrix.python-version }})"
+  #   needs: [tag]
+  #   runs-on: macos-latest
+  #   strategy:
+  #     matrix:
+  #       include:
+  #         - python-version: '3.8'
+  #         - python-version: '3.9'
+  #         - python-version: '3.10'
+  #   if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
+  #   steps:
+  #   - uses: actions/checkout@v3
+  #     with:
+  #       ref: 'master'
+  #   - name: Setup python
+  #     uses: actions/setup-python@v2
+  #     with:
+  #       python-version: ${{ matrix.python-version }}
+  #   - uses: messense/maturin-action@v1
+  #     with:
+  #       command: build
+  #       args: --interpreter ${{ matrix.python-version }} --release --no-sdist -o dist
+  #   - name: Upload wheels
+  #     uses: actions/upload-artifact@v2
+  #     with:
+  #       name: wheels
+  #       path: dist
 
   publish:
     name: Publish
     runs-on: ubuntu-latest
     if: (github.event_name != 'pull_request') && (github.ref == 'refs/heads/master')
-    needs: [build-macos, build-linux]
+    # TODO: Temporary disabled to save minutes. Re-enable once public.
+    # needs: [build-macos, build-linux]
+    needs: [build-linux]
     steps:
       - uses: actions/download-artifact@v2
         with:
