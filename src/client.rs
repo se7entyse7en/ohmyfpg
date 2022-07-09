@@ -1,4 +1,4 @@
-use crate::messages::authentication::{self, AuthenticationSASL};
+use crate::messages::authentication::{self, AuthenticationSASL, SASLInitialResponse};
 use crate::messages::startup::StartupMessage;
 use crate::messages::{BackendMessage, DeserializeMessage, SerializeMessage};
 use regex::Regex;
@@ -145,7 +145,7 @@ impl Connection {
         let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
         self.stream.read_exact(&mut body).await?;
         match &type_ {
-            authentication::MESSAGE_TYPE => Ok(BackendMessage::AuthenticationSASL(
+            authentication::AUTH_MESSAGE_TYPE => Ok(BackendMessage::AuthenticationSASL(
                 AuthenticationSASL::deserialize_body(body),
             )),
             _ => Err(MessageReadError::UnrecognizedMessage(
@@ -162,6 +162,8 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     let stream = TcpStream::connect(address).await?;
     let mut connection = Connection { stream };
     println!("Connected");
+    // TODO: Avoid this copy, usage slices when possible
+    let user = parsed_dsn.user.to_owned();
     let mut params = vec![("user".to_owned(), parsed_dsn.user)];
     match parsed_dsn.dbname {
         Some(database) => params.push(("database".to_owned(), database)),
@@ -171,6 +173,17 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     connection.write_message(msg).await?;
     let msg = connection.read_message().await?;
     println!("Message: {:?}", msg);
+
+    match msg {
+        BackendMessage::AuthenticationSASL(msg) => {
+            let mechanism = msg.mechanisms[0].to_owned();
+            let next_msg = SASLInitialResponse::new(mechanism, user);
+            connection.write_message(next_msg).await?;
+        }
+    }
+
+    let msg_back = connection.read_message().await?;
+    println!("Message back: {:?}", msg_back);
 
     Ok(connection)
 }
