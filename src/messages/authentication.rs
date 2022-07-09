@@ -50,6 +50,35 @@ impl DeserializeMessage for AuthenticationSASL {
 }
 
 #[derive(Debug)]
+pub struct AuthenticationSASLContinue {
+    pub random: String,
+    pub salt: String,
+    pub iteration: usize,
+}
+
+impl AuthenticationSASLContinue {
+    pub fn new(random: String, salt: String, iteration: usize) -> Self {
+        AuthenticationSASLContinue {
+            random,
+            salt,
+            iteration,
+        }
+    }
+}
+
+impl DeserializeMessage for AuthenticationSASLContinue {
+    fn deserialize_body(body: Vec<u8>) -> Self {
+        let challenge = String::from_utf8(body[4..].to_vec()).unwrap();
+        let fields: Vec<String> = challenge.split(',').map(|s| s.to_owned()).collect();
+        let random = fields[0][2..].to_owned();
+        let salt = fields[1][2..].to_owned();
+        let iteration = fields[2][2..].to_owned().parse::<usize>().unwrap();
+
+        AuthenticationSASLContinue::new(random, salt, iteration)
+    }
+}
+
+#[derive(Debug)]
 pub struct SASLInitialResponse {
     pub mechanism: String,
     pub user: String,

@@ -1,6 +1,6 @@
-use crate::messages::authentication::{self, AuthenticationSASL, SASLInitialResponse};
+use crate::messages::authentication::SASLInitialResponse;
 use crate::messages::startup::StartupMessage;
-use crate::messages::{BackendMessage, DeserializeMessage, SerializeMessage};
+use crate::messages::{BackendMessage, SerializeMessage};
 use regex::Regex;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -144,14 +144,7 @@ impl Connection {
         let count: [u8; 4] = header[1..5].try_into().unwrap();
         let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
         self.stream.read_exact(&mut body).await?;
-        match &type_ {
-            authentication::AUTH_MESSAGE_TYPE => Ok(BackendMessage::AuthenticationSASL(
-                AuthenticationSASL::deserialize_body(body),
-            )),
-            _ => Err(MessageReadError::UnrecognizedMessage(
-                String::from_utf8(type_.to_vec()).unwrap(),
-            )),
-        }
+        BackendMessage::parse(type_, count, body)
     }
 }
 
@@ -180,6 +173,7 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
             let next_msg = SASLInitialResponse::new(mechanism, user);
             connection.write_message(next_msg).await?;
         }
+        _ => todo!("Non-SASL auth"),
     }
 
     let msg_back = connection.read_message().await?;
