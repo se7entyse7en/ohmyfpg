@@ -1,4 +1,4 @@
-use crate::messages::authentication::SASLInitialResponse;
+use crate::messages::authentication::{SASLInitialResponse, SASLResponse};
 use crate::messages::startup::StartupMessage;
 use crate::messages::{BackendMessage, SerializeMessage};
 use regex::Regex;
@@ -132,8 +132,9 @@ pub struct Connection {
 impl Connection {
     pub async fn write_message<T>(&mut self, msg: T) -> Result<(), io::Error>
     where
-        T: SerializeMessage,
+        T: SerializeMessage + fmt::Debug,
     {
+        println!("-> Sending message: {:?}", msg);
         self.stream.write_all(&msg.serialize()).await
     }
 
@@ -144,7 +145,9 @@ impl Connection {
         let count: [u8; 4] = header[1..5].try_into().unwrap();
         let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
         self.stream.read_exact(&mut body).await?;
-        BackendMessage::parse(type_, count, body)
+        let resp = BackendMessage::parse(type_, count, body);
+        println!("<- Received message: {:?}", resp);
+        resp
     }
 }
 
@@ -162,22 +165,29 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
         Some(database) => params.push(("database".to_owned(), database)),
         None => (),
     }
-    let msg = StartupMessage::new(params);
-    connection.write_message(msg).await?;
-    let msg = connection.read_message().await?;
-    println!("Message: {:?}", msg);
+    let startup = StartupMessage::new(params);
 
-    match msg {
-        BackendMessage::AuthenticationSASL(msg) => {
-            let mechanism = msg.mechanisms[0].to_owned();
-            let next_msg = SASLInitialResponse::new(mechanism, user);
-            connection.write_message(next_msg).await?;
+    connection.write_message(startup).await?;
+    let resp = connection.read_message().await?;
+    match resp {
+        BackendMessage::AuthenticationSASL(auth_sasl) => {
+            let mechanism = auth_sasl.mechanisms[0].to_owned();
+            let sasl_init_resp = SASLInitialResponse::new(mechanism, user);
+            connection.write_message(sasl_init_resp).await?;
+
+            match connection.read_message().await? {
+                BackendMessage::AuthenticationSASLContinue(sasl_cont) => {
+                    let sasl_resp =
+                        SASLResponse::new(sasl_cont.nonce, parsed_dsn.password.unwrap().to_owned());
+                    connection.write_message(sasl_resp).await?;
+
+                    let _resp = connection.read_message().await?;
+                }
+                _ => todo!("Error"),
+            }
         }
         _ => todo!("Non-SASL auth"),
     }
-
-    let msg_back = connection.read_message().await?;
-    println!("Message back: {:?}", msg_back);
 
     Ok(connection)
 }

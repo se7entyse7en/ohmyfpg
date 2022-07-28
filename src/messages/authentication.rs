@@ -56,15 +56,15 @@ impl DeserializeMessage for AuthenticationSASL {
 
 #[derive(Debug)]
 pub struct AuthenticationSASLContinue {
-    pub random: String,
+    pub nonce: String,
     pub salt: String,
     pub iteration: usize,
 }
 
 impl AuthenticationSASLContinue {
-    pub fn new(random: String, salt: String, iteration: usize) -> Self {
+    pub fn new(nonce: String, salt: String, iteration: usize) -> Self {
         AuthenticationSASLContinue {
-            random,
+            nonce,
             salt,
             iteration,
         }
@@ -75,11 +75,11 @@ impl DeserializeMessage for AuthenticationSASLContinue {
     fn deserialize_body(body: Vec<u8>) -> Self {
         let challenge = String::from_utf8(body[4..].to_vec()).unwrap();
         let fields: Vec<String> = challenge.split(',').map(|s| s.to_owned()).collect();
-        let random = fields[0][2..].to_owned();
+        let nonce = fields[0][2..].to_owned();
         let salt = fields[1][2..].to_owned();
         let iteration = fields[2][2..].to_owned().parse::<usize>().unwrap();
 
-        AuthenticationSASLContinue::new(random, salt, iteration)
+        AuthenticationSASLContinue::new(nonce, salt, iteration)
     }
 }
 
@@ -96,11 +96,11 @@ impl SASLInitialResponse {
 
     fn create_client_first_message(&self) -> Vec<u8> {
         let mut client_first_message = b"n,,".to_vec();
-        let mut user_nonce = b"n=".to_vec();
-        user_nonce.append(&mut self.user.as_bytes().to_vec());
-        user_nonce.append(&mut b",r=".to_vec());
-        user_nonce.append(&mut self.generate_client_nonce());
-        client_first_message.append(&mut user_nonce);
+        let mut data = b"n=".to_vec();
+        data.append(&mut self.user.as_bytes().to_vec());
+        data.append(&mut b",r=".to_vec());
+        data.append(&mut self.generate_client_nonce());
+        client_first_message.append(&mut data);
         client_first_message
     }
 
@@ -129,5 +129,55 @@ impl SerializeMessage for SASLInitialResponse {
         body.append(&mut client_first_message_count.to_msg_bytes());
         body.append(&mut client_first_message);
         body
+    }
+}
+
+#[derive(Debug)]
+pub struct SASLResponse {
+    pub nonce: String,
+    pub password: String,
+}
+
+impl SASLResponse {
+    pub fn new(nonce: String, password: String) -> Self {
+        SASLResponse { nonce, password }
+    }
+
+    fn create_client_final_message(&self) -> Vec<u8> {
+        let mut client_final_message = b"c=".to_vec();
+        let channel_binding = b"n,,";
+        let mut encoded_channel_binding = Vec::new();
+        // See: https://docs.rs/base64/latest/base64/fn.encode_config_slice.html#example
+        encoded_channel_binding.resize(channel_binding.len() * 4 / 3 + 4, 0);
+        let bytes_written =
+            base64::encode_config_slice(b"n,,", base64::STANDARD, &mut encoded_channel_binding);
+        encoded_channel_binding.resize(bytes_written, 0);
+        client_final_message.append(&mut encoded_channel_binding);
+        let mut data = b",r=".to_vec();
+        data.append(&mut self.nonce.as_bytes().to_vec());
+        data.append(&mut b",p=".to_vec());
+        data.append(&mut self.generate_hashed_password());
+        client_final_message.append(&mut data);
+        println!("client-final-message: {:?}", client_final_message);
+        println!(
+            "client-final-message (STRING): {:?}",
+            String::from_utf8(client_final_message.to_owned()).unwrap()
+        );
+        client_final_message
+    }
+
+    fn generate_hashed_password(&self) -> Vec<u8> {
+        // TODO: Handle case with prohibited byte sequences according to `SASLprep`
+        Vec::new()
+    }
+}
+
+impl SerializeMessage for SASLResponse {
+    fn get_msg_type(&self) -> Option<&[u8; 1]> {
+        Some(SASL_FE_MESSAGE_TYPE)
+    }
+
+    fn serialize_body(self) -> Vec<u8> {
+        self.create_client_final_message()
     }
 }
