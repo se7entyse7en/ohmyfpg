@@ -1,7 +1,9 @@
 pub mod authentication;
 pub mod startup;
 use crate::client::MessageReadError;
-use authentication::{AuthenticationSASL, AuthenticationSASLContinue};
+use authentication::{
+    AuthenticationOk, AuthenticationSASL, AuthenticationSASLContinue, AuthenticationSASLFinal,
+};
 
 pub trait SerializeMessage: Sized {
     fn serialize(self) -> Vec<u8> {
@@ -57,13 +59,16 @@ impl SerializeMessageBytes for u32 {
 pub enum BackendMessage {
     AuthenticationSASL(AuthenticationSASL),
     AuthenticationSASLContinue(AuthenticationSASLContinue),
+    AuthenticationSASLFinal(AuthenticationSASLFinal),
+    AuthenticationOk(AuthenticationOk),
 }
 
 impl BackendMessage {
-    pub fn parse(type_: [u8; 1], _count: [u8; 4], body: Vec<u8>) -> Result<Self, MessageReadError> {
+    pub fn parse(type_: [u8; 1], count: [u8; 4], body: Vec<u8>) -> Result<Self, MessageReadError> {
         match &type_ {
             authentication::AUTH_MESSAGE_TYPE => {
                 let raw_sub_type: [u8; 4] = body[..4].try_into().unwrap();
+                let count = u32::from_be_bytes(count);
                 let sub_type = u32::from_be_bytes(raw_sub_type);
                 match sub_type {
                     10_u32 => Ok(BackendMessage::AuthenticationSASL(
@@ -72,10 +77,18 @@ impl BackendMessage {
                     11_u32 => Ok(BackendMessage::AuthenticationSASLContinue(
                         AuthenticationSASLContinue::deserialize_body(body),
                     )),
+                    12_u32 => Ok(BackendMessage::AuthenticationSASLFinal(
+                        AuthenticationSASLFinal::deserialize_body(body),
+                    )),
+                    0_u32 => Ok(BackendMessage::AuthenticationOk(
+                        AuthenticationOk::deserialize_body(body),
+                    )),
                     _ => Err(MessageReadError::UnrecognizedMessage(format!(
-                        "{},{}",
+                        "type={},count={},sub_type={},raw_body={:?}",
                         String::from_utf8(type_.to_vec()).unwrap(),
-                        sub_type
+                        count,
+                        sub_type,
+                        body,
                     ))),
                 }
             }

@@ -13,3 +13,5 @@ fn test_serialize_deserialize() {
     let m2 = AuthenticationSASL::deserialize_body(bytes[5..].to_vec());
     assert_eq!(m2.mechanisms, vec!["SCRAM-SHA-256".to_owned()]);
 }
+
+// TODO: Add tests for other Auth SASL messages
