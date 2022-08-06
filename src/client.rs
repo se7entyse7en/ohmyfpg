@@ -1,8 +1,7 @@
-use crate::messages::authentication::{SASLInitialResponse, SASLResponse};
+use crate::messages::authentication::sasl_authenticate;
 use crate::messages::startup::StartupMessage;
 use crate::messages::{BackendMessage, SerializeMessage};
 use regex::Regex;
-use scram::ScramClient;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -97,6 +96,19 @@ impl From<io::Error> for MessageReadError {
     }
 }
 
+impl fmt::Display for MessageReadError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            MessageReadError::UnrecognizedMessage(msg_type) => {
+                write!(f, "Unrecognized message type: {}", msg_type)
+            }
+            MessageReadError::IOError(err) => write!(f, "IO Error: {}", err),
+        }
+    }
+}
+
+impl error::Error for MessageReadError {}
+
 pub fn parse_dsn(dsn: &str) -> Result<DSN, InvalidDSNError> {
     let re = Regex::new(PATTERN).unwrap();
     let caps = re.captures(dsn).unwrap();
@@ -134,7 +146,7 @@ impl Connection {
     where
         T: SerializeMessage + fmt::Debug,
     {
-        println!("<- Sending message: {:?}", msg);
+        println!("-> Sending message: {:?}", msg);
         self.stream.write_all(&msg.serialize()).await
     }
 
@@ -157,10 +169,8 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     println!("Connecting to {}...", address);
     let stream = TcpStream::connect(address).await?;
     let mut connection = Connection { stream };
-    println!("Connected");
-    // TODO: Avoid this copy, usage slices when possible
-    let user = parsed_dsn.user.to_owned();
-    let mut params = vec![("user".to_owned(), parsed_dsn.user)];
+    println!("Connected!");
+    let mut params = vec![("user".to_owned(), parsed_dsn.user.to_owned())];
     match parsed_dsn.dbname {
         Some(database) => params.push(("database".to_owned(), database)),
         None => (),
@@ -171,36 +181,8 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     let resp = connection.read_message().await?;
     match resp {
         BackendMessage::AuthenticationSASL(auth_sasl) => {
-            // TODO: Only SCRAM-SHA-256 is supported, add check here
-            let mechanism = auth_sasl.mechanisms[0].to_owned();
-            let password = parsed_dsn.password.unwrap().to_owned();
-            let scram = ScramClient::new(&user, &password, None);
-            let (scram, client_first) = scram.client_first();
-            let sasl_init_resp = SASLInitialResponse::new(mechanism, client_first);
-            connection.write_message(sasl_init_resp).await?;
-
-            match connection.read_message().await? {
-                BackendMessage::AuthenticationSASLContinue(sasl_cont) => {
-                    let scram = scram.handle_server_first(&sasl_cont.server_first).unwrap();
-                    let (scram, client_final) = scram.client_final();
-                    let sasl_resp = SASLResponse::new(client_final);
-                    connection.write_message(sasl_resp).await?;
-
-                    match connection.read_message().await? {
-                        BackendMessage::AuthenticationSASLFinal(sasl_final) => {
-                            scram.handle_server_final(&sasl_final.server_final).unwrap();
-                            match connection.read_message().await? {
-                                BackendMessage::AuthenticationOk(_) => {
-                                    println!("Auth successfull!");
-                                }
-                                _ => todo!("Error"),
-                            }
-                        }
-                        _ => todo!("Error"),
-                    }
-                }
-                _ => todo!("Error"),
-            }
+            let password = parsed_dsn.password.unwrap();
+            sasl_authenticate(&mut connection, &parsed_dsn.user, &password, auth_sasl).await?;
         }
         _ => todo!("Non-SASL auth"),
     }
