@@ -2,6 +2,7 @@
 mod tests;
 use crate::messages::DeserializeMessage;
 mod sasl;
+pub use sasl::authenticate as sasl_authenticate;
 pub use sasl::{
     AuthenticationSASL, AuthenticationSASLContinue, AuthenticationSASLFinal, SASLInitialResponse,
     SASLResponse,
