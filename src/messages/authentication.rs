@@ -1,8 +1,6 @@
 #[cfg(test)]
 mod tests;
 use crate::messages::{DeserializeMessage, SerializeMessage, SerializeMessageBytes};
-use base64;
-use getrandom::getrandom;
 
 pub const AUTH_MESSAGE_TYPE: &[u8; 1] = b"R";
 const SASL_FE_MESSAGE_TYPE: &[u8; 1] = b"p";
@@ -63,64 +61,34 @@ impl DeserializeMessage for AuthenticationSASL {
 
 #[derive(Debug)]
 pub struct AuthenticationSASLContinue {
-    pub random: String,
-    pub salt: String,
-    pub iteration: usize,
+    pub server_first: String,
 }
 
 impl AuthenticationSASLContinue {
-    pub fn new(random: String, salt: String, iteration: usize) -> Self {
-        AuthenticationSASLContinue {
-            random,
-            salt,
-            iteration,
-        }
+    pub fn new(server_first: String) -> Self {
+        AuthenticationSASLContinue { server_first }
     }
 }
 
 impl DeserializeMessage for AuthenticationSASLContinue {
     fn deserialize_body(body: Vec<u8>) -> Self {
-        let challenge = String::from_utf8(body[4..].to_vec()).unwrap();
-        let fields: Vec<String> = challenge.split(',').map(|s| s.to_owned()).collect();
-        let random = fields[0][2..].to_owned();
-        let salt = fields[1][2..].to_owned();
-        let iteration = fields[2][2..].to_owned().parse::<usize>().unwrap();
-
-        AuthenticationSASLContinue::new(random, salt, iteration)
+        let server_first = String::from_utf8(body[4..].to_vec()).unwrap();
+        AuthenticationSASLContinue::new(server_first)
     }
 }
 
 #[derive(Debug)]
 pub struct SASLInitialResponse {
     pub mechanism: String,
-    pub user: String,
+    pub client_first: String,
 }
 
 impl SASLInitialResponse {
-    pub fn new(mechanism: String, user: String) -> Self {
-        SASLInitialResponse { mechanism, user }
-    }
-
-    fn create_client_first_message(&self) -> Vec<u8> {
-        let mut client_first_message = b"n,,".to_vec();
-        let mut user_nonce = b"n=".to_vec();
-        user_nonce.append(&mut self.user.as_bytes().to_vec());
-        user_nonce.append(&mut b",r=".to_vec());
-        user_nonce.append(&mut self.generate_client_nonce());
-        client_first_message.append(&mut user_nonce);
-        client_first_message
-    }
-
-    fn generate_client_nonce(&self) -> Vec<u8> {
-        let mut nonce = [0u8; 16];
-        getrandom(&mut nonce).unwrap();
-        let mut encoded_nonce = Vec::new();
-        // See: https://docs.rs/base64/latest/base64/fn.encode_config_slice.html#example
-        encoded_nonce.resize(nonce.len() * 4 / 3 + 4, 0);
-        let bytes_written =
-            base64::encode_config_slice(nonce, base64::STANDARD, &mut encoded_nonce);
-        encoded_nonce.resize(bytes_written, 0);
-        encoded_nonce
+    pub fn new(mechanism: String, client_first: String) -> Self {
+        SASLInitialResponse {
+            mechanism,
+            client_first,
+        }
     }
 }
 
@@ -131,10 +99,69 @@ impl SerializeMessage for SASLInitialResponse {
 
     fn serialize_body(self) -> Vec<u8> {
         let mut body = self.mechanism.to_owned().to_msg_bytes();
-        let mut client_first_message = self.create_client_first_message();
-        let client_first_message_count: u32 = client_first_message.len().try_into().unwrap();
-        body.append(&mut client_first_message_count.to_msg_bytes());
-        body.append(&mut client_first_message);
+        let client_first_count: u32 = self.client_first.len().try_into().unwrap();
+        body.append(&mut client_first_count.to_msg_bytes());
+        body.append(&mut self.client_first.into_bytes());
         body
+    }
+}
+
+#[derive(Debug)]
+pub struct SASLResponse {
+    pub client_final: String,
+}
+
+impl SASLResponse {
+    pub fn new(client_final: String) -> Self {
+        SASLResponse { client_final }
+    }
+}
+
+impl SerializeMessage for SASLResponse {
+    fn get_msg_type(&self) -> Option<&[u8; 1]> {
+        Some(SASL_FE_MESSAGE_TYPE)
+    }
+
+    fn serialize_body(self) -> Vec<u8> {
+        self.client_final.into_bytes()
+    }
+}
+
+#[derive(Debug)]
+pub struct AuthenticationSASLFinal {
+    pub server_final: String,
+}
+
+impl AuthenticationSASLFinal {
+    pub fn new(server_final: String) -> Self {
+        AuthenticationSASLFinal { server_final }
+    }
+}
+
+impl DeserializeMessage for AuthenticationSASLFinal {
+    fn deserialize_body(body: Vec<u8>) -> Self {
+        let server_final = String::from_utf8(body[4..].to_vec()).unwrap();
+        AuthenticationSASLFinal::new(server_final)
+    }
+}
+
+#[derive(Debug)]
+pub struct AuthenticationOk {}
+
+impl Default for AuthenticationOk {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl AuthenticationOk {
+    pub fn new() -> Self {
+        AuthenticationOk {}
+    }
+}
+
+impl DeserializeMessage for AuthenticationOk {
+    fn deserialize_body(_: Vec<u8>) -> Self {
+        AuthenticationOk::new()
     }
 }
