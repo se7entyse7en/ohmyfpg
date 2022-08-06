@@ -16,6 +16,7 @@ regex = "1.5"
 futures = "0.3.21"
 getrandom = "0.2.7"
 base64 = "0.13.0"
+scram = "0.6.0"
 
 [package.metadata.maturin]
 python-source = "python"
