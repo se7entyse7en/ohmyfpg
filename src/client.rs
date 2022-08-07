@@ -1,6 +1,6 @@
 use crate::messages::authentication::sasl_authenticate;
 use crate::messages::startup::StartupMessage;
-use crate::messages::{BackendMessage, SerializeMessage};
+use crate::messages::{BackendMessage, ErrorResponse, SerializeMessage};
 use regex::Regex;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -39,6 +39,35 @@ impl fmt::Display for InvalidDSNError {
 }
 
 impl error::Error for InvalidDSNError {}
+
+#[derive(Debug)]
+pub struct ServerError {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+}
+
+impl fmt::Display for ServerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[{}] {} (code: {})",
+            self.severity, self.message, self.code
+        )
+    }
+}
+
+impl From<ErrorResponse> for ServerError {
+    fn from(err_resp: ErrorResponse) -> Self {
+        ServerError {
+            severity: err_resp.severity,
+            code: err_resp.code,
+            message: err_resp.message,
+        }
+    }
+}
+
+impl error::Error for ServerError {}
 
 #[derive(Debug)]
 pub enum ConnectionError {
