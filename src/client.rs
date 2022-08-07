@@ -209,8 +209,7 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     let startup = StartupMessage::new(params);
 
     connection.write_message(startup).await?;
-    let resp = connection.read_message().await?;
-    match resp {
+    match connection.read_message().await? {
         BackendMessage::AuthenticationSASL(auth_sasl) => {
             let password = parsed_dsn.password.unwrap();
             sasl_authenticate(&mut connection, &parsed_dsn.user, &password, auth_sasl).await?;
@@ -218,5 +217,10 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
         _ => todo!("Non-SASL auth"),
     }
 
-    Ok(connection)
+    match connection.read_message().await? {
+        BackendMessage::ErrorResponse(err_resp) => {
+            Err(ConnectionError::ServerError(ServerError::from(err_resp)))
+        }
+        _ => Ok(connection),
+    }
 }
