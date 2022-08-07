@@ -4,6 +4,9 @@ use crate::client::MessageReadError;
 use authentication::{
     AuthenticationOk, AuthenticationSASL, AuthenticationSASLContinue, AuthenticationSASLFinal,
 };
+use std::collections::HashMap;
+
+const ERROR_MESSAGE_TYPE: &[u8; 1] = b"E";
 
 pub trait SerializeMessage: Sized {
     fn serialize(self) -> Vec<u8> {
@@ -61,6 +64,41 @@ pub enum BackendMessage {
     AuthenticationSASLContinue(AuthenticationSASLContinue),
     AuthenticationSASLFinal(AuthenticationSASLFinal),
     AuthenticationOk(AuthenticationOk),
+    ErrorResponse(ErrorResponse),
+}
+
+#[derive(Debug)]
+pub struct ErrorResponse {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+}
+
+impl ErrorResponse {
+    pub fn new(severity: String, code: String, message: String) -> Self {
+        ErrorResponse {
+            severity,
+            code,
+            message,
+        }
+    }
+}
+
+impl DeserializeMessage for ErrorResponse {
+    fn deserialize_body(body: Vec<u8>) -> Self {
+        // Reference: https://www.postgresql.org/docs/current/protocol-error-fields.html
+        let raw_fields = body.split(|b| *b == 0).filter(|rf| !rf.is_empty());
+        let mut fields = HashMap::new();
+        for rf in raw_fields {
+            let key = String::from_utf8(rf[0..1].to_vec()).unwrap();
+            let value = String::from_utf8(rf[1..].to_vec()).unwrap();
+            fields.insert(key, value);
+        }
+        let severity = fields.get("S").unwrap().to_owned();
+        let code = fields.get("C").unwrap().to_owned();
+        let message = fields.get("M").unwrap().to_owned();
+        ErrorResponse::new(severity, code, message)
+    }
 }
 
 impl BackendMessage {
@@ -92,6 +130,9 @@ impl BackendMessage {
                     ))),
                 }
             }
+            ERROR_MESSAGE_TYPE => Ok(BackendMessage::ErrorResponse(
+                ErrorResponse::deserialize_body(body),
+            )),
             _ => Err(MessageReadError::UnrecognizedMessage(
                 String::from_utf8(type_.to_vec()).unwrap(),
             )),
