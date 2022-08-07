@@ -73,6 +73,7 @@ impl error::Error for ServerError {}
 pub enum ConnectionError {
     InvalidDSNError(InvalidDSNError),
     UnrecognizedMessage(String),
+    ServerError(ServerError),
     IOError(io::Error),
 }
 
@@ -81,6 +82,7 @@ impl fmt::Display for ConnectionError {
         match self {
             ConnectionError::InvalidDSNError(err) => write!(f, "Invalid DSM: {}", err),
             ConnectionError::IOError(err) => write!(f, "IO Error: {}", err),
+            ConnectionError::ServerError(err) => write!(f, "{}", err),
             ConnectionError::UnrecognizedMessage(msg_type) => {
                 write!(f, "Unrecognized message type: {}", msg_type)
             }
