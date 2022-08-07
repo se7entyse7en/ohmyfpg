@@ -217,10 +217,11 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
         _ => todo!("Non-SASL auth"),
     }
 
-    match connection.read_message().await? {
-        BackendMessage::ErrorResponse(err_resp) => {
-            Err(ConnectionError::ServerError(ServerError::from(err_resp)))
+    loop {
+        if let BackendMessage::ReadyForQuery(_) = connection.read_message().await? {
+            break;
         }
-        _ => Ok(connection),
     }
+
+    Ok(connection)
 }
