@@ -1,6 +1,6 @@
 use crate::messages::authentication::sasl_authenticate;
 use crate::messages::startup::StartupMessage;
-use crate::messages::{BackendMessage, SerializeMessage};
+use crate::messages::{BackendMessage, ErrorResponse, SerializeMessage};
 use regex::Regex;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -41,9 +41,39 @@ impl fmt::Display for InvalidDSNError {
 impl error::Error for InvalidDSNError {}
 
 #[derive(Debug)]
+pub struct ServerError {
+    pub severity: String,
+    pub code: String,
+    pub message: String,
+}
+
+impl fmt::Display for ServerError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(
+            f,
+            "[{}] {} (code: {})",
+            self.severity, self.message, self.code
+        )
+    }
+}
+
+impl From<ErrorResponse> for ServerError {
+    fn from(err_resp: ErrorResponse) -> Self {
+        ServerError {
+            severity: err_resp.severity,
+            code: err_resp.code,
+            message: err_resp.message,
+        }
+    }
+}
+
+impl error::Error for ServerError {}
+
+#[derive(Debug)]
 pub enum ConnectionError {
     InvalidDSNError(InvalidDSNError),
     UnrecognizedMessage(String),
+    ServerError(ServerError),
     IOError(io::Error),
 }
 
@@ -52,6 +82,7 @@ impl fmt::Display for ConnectionError {
         match self {
             ConnectionError::InvalidDSNError(err) => write!(f, "Invalid DSM: {}", err),
             ConnectionError::IOError(err) => write!(f, "IO Error: {}", err),
+            ConnectionError::ServerError(err) => write!(f, "{}", err),
             ConnectionError::UnrecognizedMessage(msg_type) => {
                 write!(f, "Unrecognized message type: {}", msg_type)
             }
@@ -178,8 +209,7 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     let startup = StartupMessage::new(params);
 
     connection.write_message(startup).await?;
-    let resp = connection.read_message().await?;
-    match resp {
+    match connection.read_message().await? {
         BackendMessage::AuthenticationSASL(auth_sasl) => {
             let password = parsed_dsn.password.unwrap();
             sasl_authenticate(&mut connection, &parsed_dsn.user, &password, auth_sasl).await?;
@@ -187,5 +217,10 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
         _ => todo!("Non-SASL auth"),
     }
 
-    Ok(connection)
+    match connection.read_message().await? {
+        BackendMessage::ErrorResponse(err_resp) => {
+            Err(ConnectionError::ServerError(ServerError::from(err_resp)))
+        }
+        _ => Ok(connection),
+    }
 }
