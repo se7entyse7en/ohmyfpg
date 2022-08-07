@@ -1,5 +1,5 @@
 [semver]
-current_version = '0.1.0-dev.15'
+current_version = '0.1.0-dev.16'
 last_stable_version = '0.0.0'
 default_part = 'minor'
 [semver.files."HISTORY.md"]

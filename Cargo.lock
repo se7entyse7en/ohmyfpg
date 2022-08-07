@@ -232,7 +232,7 @@ dependencies = [
 
 [[package]]
 name = "ohmyfpg"
-version = "0.1.0-dev.15"
+version = "0.1.0-dev.16"
 dependencies = [
  "base64",
  "futures",
