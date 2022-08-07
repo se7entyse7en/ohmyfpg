@@ -7,6 +7,10 @@ use authentication::{
 use std::collections::HashMap;
 
 const ERROR_MESSAGE_TYPE: &[u8; 1] = b"E";
+const PARAMETER_STATUS_TYPE: &[u8; 1] = b"S";
+const BACKEND_KEY_DATA_TYPE: &[u8; 1] = b"K";
+const NOTICE_RESPONSE_TYPE: &[u8; 1] = b"N";
+const READY_FOR_QUERY_TYPE: &[u8; 1] = b"Z";
 
 pub trait SerializeMessage: Sized {
     fn serialize(self) -> Vec<u8> {
@@ -65,6 +69,10 @@ pub enum BackendMessage {
     AuthenticationSASLFinal(AuthenticationSASLFinal),
     AuthenticationOk(AuthenticationOk),
     ErrorResponse(ErrorResponse),
+    ParameterStatus(ParameterStatus),
+    BackendKeyData(BackendKeyData),
+    NoticeResponse(NoticeResponse),
+    ReadyForQuery(ReadyForQuery),
 }
 
 #[derive(Debug)]
@@ -83,6 +91,18 @@ impl ErrorResponse {
         }
     }
 }
+
+#[derive(Debug, Default)]
+pub struct ParameterStatus {}
+
+#[derive(Debug, Default)]
+pub struct BackendKeyData {}
+
+#[derive(Debug, Default)]
+pub struct NoticeResponse {}
+
+#[derive(Debug, Default)]
+pub struct ReadyForQuery {}
 
 impl DeserializeMessage for ErrorResponse {
     fn deserialize_body(body: Vec<u8>) -> Self {
@@ -130,6 +150,12 @@ impl BackendMessage {
                     ))),
                 }
             }
+            PARAMETER_STATUS_TYPE => {
+                Ok(BackendMessage::ParameterStatus(ParameterStatus::default()))
+            }
+            BACKEND_KEY_DATA_TYPE => Ok(BackendMessage::BackendKeyData(BackendKeyData::default())),
+            NOTICE_RESPONSE_TYPE => Ok(BackendMessage::NoticeResponse(NoticeResponse::default())),
+            READY_FOR_QUERY_TYPE => Ok(BackendMessage::ReadyForQuery(ReadyForQuery::default())),
             ERROR_MESSAGE_TYPE => Ok(BackendMessage::ErrorResponse(
                 ErrorResponse::deserialize_body(body),
             )),
