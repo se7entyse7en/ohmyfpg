@@ -1,5 +1,5 @@
 __NAME__ = "ohmyfpg"
-__VERSION__ = "0.1.0-dev.16"
+__VERSION__ = "0.1.0-dev.17"
 __DESCRIPTION__ = "Oh My Fast Postgres!"
 
 from ohmyfpg import ohmyfpg
