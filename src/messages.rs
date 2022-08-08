@@ -1,4 +1,5 @@
 pub mod authentication;
+pub mod query;
 pub mod startup;
 use crate::client::MessageReadError;
 use authentication::{
