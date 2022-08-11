@@ -1,10 +1,10 @@
 [semver]
-current_version = '0.1.0-dev.17'
+current_version = '0.1.0-dev.18'
 last_stable_version = '0.0.0'
 default_part = 'minor'
-[semver.files."pyproject.toml"]
-search = 'version = "{current_version}"'
-replace = 'version = "{new_version}"'
+[semver.files."python/ohmyfpg/__init__.py"]
+search = '__VERSION__ = "{current_version}"'
+replace = '__VERSION__ = "{new_version}"'
 
 [semver.files."Cargo.toml"]
 search = '''
@@ -18,18 +18,6 @@ name = "ohmyfpg"
 version = "{new_version}"
 '''
 
-[semver.files."HISTORY.md"]
-search = '## Unreleased'
-replace = '''
-## Unreleased
-
-## [v{new_version} - {utc_today_ymd}](https://github.com/se7entyse7en/semver/compare/v{last_stable_version}...v{new_version})'''
-stable_only = true
-
-[semver.files."python/ohmyfpg/__init__.py"]
-search = '__VERSION__ = "{current_version}"'
-replace = '__VERSION__ = "{new_version}"'
-
 [semver.files."Cargo.lock"]
 search = '''
 [[package]]
@@ -41,6 +29,18 @@ replace = '''
 name = "ohmyfpg"
 version = "{new_version}"
 '''
+
+[semver.files."pyproject.toml"]
+search = 'version = "{current_version}"'
+replace = 'version = "{new_version}"'
+
+[semver.files."HISTORY.md"]
+search = '## Unreleased'
+replace = '''
+## Unreleased
+
+## [v{new_version} - {utc_today_ymd}](https://github.com/se7entyse7en/semver/compare/v{last_stable_version}...v{new_version})'''
+stable_only = true
 
 [semver.prerelease]
 bump_script = '''
