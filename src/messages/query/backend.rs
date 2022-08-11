@@ -2,6 +2,7 @@ use crate::messages::DeserializeMessage;
 
 pub const ROW_DESCRIPTION_MESSAGE_TYPE: &[u8; 1] = b"T";
 pub const DATA_ROW_MESSAGE_TYPE: &[u8; 1] = b"D";
+pub const COMMAND_COMPLETE_MESSAGE_TYPE: &[u8; 1] = b"C";
 
 #[derive(Debug)]
 pub struct FieldDescription {
@@ -95,5 +96,22 @@ impl DeserializeMessage for DataRow {
         };
 
         DataRow::new(cols_values)
+    }
+}
+
+#[derive(Debug)]
+pub struct CommandComplete {
+    pub tag: String,
+}
+
+impl CommandComplete {
+    pub fn new(tag: String) -> Self {
+        CommandComplete { tag }
+    }
+}
+
+impl DeserializeMessage for CommandComplete {
+    fn deserialize_body(body: Vec<u8>) -> Self {
+        CommandComplete::new(String::from_utf8(body[..body.len() - 1].to_vec()).unwrap())
     }
 }
