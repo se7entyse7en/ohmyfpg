@@ -245,6 +245,10 @@ impl Connection {
             msg => Err(MessageReadError::UnexpectedMessage(msg)),
         }
     }
+
+    pub async fn fetch(&mut self, _query_string: String) -> Result<(), MessageReadError> {
+        Ok(())
+    }
 }
 
 pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
