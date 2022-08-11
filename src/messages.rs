@@ -5,6 +5,7 @@ use crate::client::MessageReadError;
 use authentication::{
     AuthenticationOk, AuthenticationSASL, AuthenticationSASLContinue, AuthenticationSASLFinal,
 };
+use query::RowDescription;
 use std::collections::HashMap;
 
 const ERROR_MESSAGE_TYPE: &[u8; 1] = b"E";
@@ -74,6 +75,7 @@ pub enum BackendMessage {
     BackendKeyData(BackendKeyData),
     NoticeResponse(NoticeResponse),
     ReadyForQuery(ReadyForQuery),
+    RowDescription(RowDescription),
 }
 
 #[derive(Debug)]
@@ -159,6 +161,9 @@ impl BackendMessage {
             READY_FOR_QUERY_TYPE => Ok(BackendMessage::ReadyForQuery(ReadyForQuery::default())),
             ERROR_MESSAGE_TYPE => Ok(BackendMessage::ErrorResponse(
                 ErrorResponse::deserialize_body(body),
+            )),
+            query::ROW_DESCRIPTION_MESSAGE_TYPE => Ok(BackendMessage::RowDescription(
+                RowDescription::deserialize_body(body),
             )),
             _ => Err(MessageReadError::UnrecognizedMessage(
                 String::from_utf8(type_.to_vec()).unwrap(),
