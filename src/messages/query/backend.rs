@@ -1,6 +1,7 @@
 use crate::messages::DeserializeMessage;
 
 pub const ROW_DESCRIPTION_MESSAGE_TYPE: &[u8; 1] = b"T";
+pub const DATA_ROW_MESSAGE_TYPE: &[u8; 1] = b"D";
 
 #[derive(Debug)]
 pub struct FieldDescription {
@@ -51,5 +52,48 @@ impl DeserializeMessage for RowDescription {
             fields_desc.push(FieldDescription::new(name, data_type_oid));
         }
         RowDescription::new(fields_desc)
+    }
+}
+
+#[derive(Debug)]
+pub struct DataRow {
+    pub columns: Vec<Option<Vec<u8>>>,
+}
+
+impl DataRow {
+    pub fn new(columns: Vec<Option<Vec<u8>>>) -> Self {
+        DataRow { columns }
+    }
+}
+
+impl DeserializeMessage for DataRow {
+    fn deserialize_body(body: Vec<u8>) -> Self {
+        let cols_first_index = 2;
+        let raw_cols_count: [u8; 2] = body[0..cols_first_index].try_into().unwrap();
+        let cols_count = u16::from_be_bytes(raw_cols_count);
+        let cols_values = if cols_count == 0 {
+            vec![]
+        } else {
+            let mut col_idx_start = cols_first_index;
+            let mut cols_values: Vec<Option<Vec<u8>>> = Vec::with_capacity(cols_count.into());
+            for _ in 1..cols_count + 1 {
+                let col_idx_end = col_idx_start + 4;
+                let raw_value_len: [u8; 4] = body[col_idx_start..col_idx_end].try_into().unwrap();
+                let value_len = i32::from_be_bytes(raw_value_len);
+
+                if value_len < 0 {
+                    cols_values.push(None);
+                    col_idx_start = col_idx_end;
+                } else {
+                    let value_idx_start: usize = col_idx_end;
+                    let value_idx_end: usize = value_idx_start + value_len as usize;
+                    cols_values.push(Some(body[value_idx_start..value_idx_end].to_vec()));
+                    col_idx_start = col_idx_end + value_len as usize;
+                }
+            }
+            cols_values
+        };
+
+        DataRow::new(cols_values)
     }
 }
