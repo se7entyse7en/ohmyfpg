@@ -2,6 +2,7 @@ use pyo3::prelude::*;
 pub mod bindings;
 pub mod client;
 pub mod messages;
+pub mod server;
 
 /// Entrypoint for `ohmyfpg` Rust implementation
 #[pymodule]
