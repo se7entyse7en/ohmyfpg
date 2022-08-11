@@ -1,7 +1,10 @@
 use crate::messages::authentication::sasl_authenticate;
+use crate::messages::query::{DataRow, Query, RowDescription};
 use crate::messages::startup::StartupMessage;
 use crate::messages::{BackendMessage, ErrorResponse, SerializeMessage};
+use crate::server::PgType;
 use regex::Regex;
+use std::collections::HashMap;
 use std::{error, fmt, io};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -73,6 +76,7 @@ impl error::Error for ServerError {}
 pub enum ConnectionError {
     InvalidDSNError(InvalidDSNError),
     UnrecognizedMessage(String),
+    UnexpectedMessage(BackendMessage),
     ServerError(ServerError),
     IOError(io::Error),
 }
@@ -83,6 +87,9 @@ impl fmt::Display for ConnectionError {
             ConnectionError::InvalidDSNError(err) => write!(f, "Invalid DSM: {}", err),
             ConnectionError::IOError(err) => write!(f, "IO Error: {}", err),
             ConnectionError::ServerError(err) => write!(f, "{}", err),
+            ConnectionError::UnexpectedMessage(msg) => {
+                write!(f, "Unexpected message: {:?}", msg)
+            }
             ConnectionError::UnrecognizedMessage(msg_type) => {
                 write!(f, "Unrecognized message type: {}", msg_type)
             }
@@ -110,6 +117,7 @@ impl From<MessageReadError> for ConnectionError {
             MessageReadError::UnrecognizedMessage(msg_type) => {
                 ConnectionError::UnrecognizedMessage(msg_type)
             }
+            MessageReadError::UnexpectedMessage(msg) => ConnectionError::UnexpectedMessage(msg),
             MessageReadError::IOError(err) => ConnectionError::IOError(err),
         }
     }
@@ -118,6 +126,7 @@ impl From<MessageReadError> for ConnectionError {
 #[derive(Debug)]
 pub enum MessageReadError {
     UnrecognizedMessage(String),
+    UnexpectedMessage(BackendMessage),
     IOError(io::Error),
 }
 
@@ -132,6 +141,9 @@ impl fmt::Display for MessageReadError {
         match self {
             MessageReadError::UnrecognizedMessage(msg_type) => {
                 write!(f, "Unrecognized message type: {}", msg_type)
+            }
+            MessageReadError::UnexpectedMessage(msg) => {
+                write!(f, "Unexpected message: {:?}", msg)
             }
             MessageReadError::IOError(err) => write!(f, "IO Error: {}", err),
         }
@@ -170,9 +182,17 @@ pub fn parse_dsn(dsn: &str) -> Result<DSN, InvalidDSNError> {
 
 pub struct Connection {
     stream: TcpStream,
+    pg_types: Option<HashMap<u32, PgType>>,
 }
 
 impl Connection {
+    pub fn new(stream: TcpStream) -> Self {
+        Connection {
+            stream,
+            pg_types: None,
+        }
+    }
+
     pub async fn write_message<T>(&mut self, msg: T) -> Result<(), io::Error>
     where
         T: SerializeMessage + fmt::Debug,
@@ -188,9 +208,42 @@ impl Connection {
         let count: [u8; 4] = header[1..5].try_into().unwrap();
         let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
         self.stream.read_exact(&mut body).await?;
+        println!("<- Received raw message: {:?}", &body);
         let resp = BackendMessage::parse(type_, count, body);
         println!("<- Received message: {:?}", resp);
         resp
+    }
+
+    pub async fn fetch_raw(
+        &mut self,
+        query_string: String,
+    ) -> Result<(RowDescription, Vec<DataRow>), MessageReadError> {
+        self.write_message(Query::new(query_string)).await?;
+
+        match self.read_message().await? {
+            BackendMessage::RowDescription(row_desc) => {
+                let mut data_rows = Vec::with_capacity(row_desc.fields.len());
+                let mut error: Option<MessageReadError> = None;
+                loop {
+                    match self.read_message().await? {
+                        BackendMessage::DataRow(data_row) => data_rows.push(data_row),
+                        BackendMessage::CommandComplete(_) => {
+                            break;
+                        }
+                        msg => {
+                            error = Some(MessageReadError::UnexpectedMessage(msg));
+                            break;
+                        }
+                    };
+                }
+
+                match error {
+                    Some(err) => Err(err),
+                    None => Ok((row_desc, data_rows)),
+                }
+            }
+            msg => Err(MessageReadError::UnexpectedMessage(msg)),
+        }
     }
 }
 
@@ -199,7 +252,7 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
     let address = parsed_dsn.address;
     println!("Connecting to {}...", address);
     let stream = TcpStream::connect(address).await?;
-    let mut connection = Connection { stream };
+    let mut connection = Connection::new(stream);
     println!("Connected!");
     let mut params = vec![("user".to_owned(), parsed_dsn.user.to_owned())];
     match parsed_dsn.dbname {
@@ -223,5 +276,36 @@ pub async fn connect(dsn: String) -> Result<Connection, ConnectionError> {
         }
     }
 
+    println!("Fetching PG types...");
+    let query_string = r#"
+SELECT oid, typname, typlen
+FROM pg_type
+WHERE typname IN (
+  'int2', 'int4', 'int8', 'numeric', 'float4', 'float8'
+);
+"#
+    .to_owned();
+    let (_, data_rows) = connection.fetch_raw(query_string).await?;
+    let mut pg_types = HashMap::new();
+    for mut dr in data_rows.into_iter() {
+        let raw_oid = dr.columns[0].take().unwrap();
+        let raw_name = dr.columns[1].take().unwrap();
+        let raw_size = dr.columns[2].take().unwrap();
+
+        let s_oid = String::from_utf8(raw_oid).unwrap();
+        let name = String::from_utf8(raw_name).unwrap();
+        let s_size = String::from_utf8(raw_size).unwrap();
+
+        let oid: u32 = s_oid.parse().unwrap();
+        let size: Option<u8> = match s_size.as_str() {
+            "-1" => None,
+            s => Some(s.parse().unwrap()),
+        };
+
+        pg_types.insert(oid, PgType::new(oid, name, size));
+    }
+    connection.pg_types = Some(pg_types);
+    println!("PG types: {:?}", connection.pg_types);
+    println!("PG types fetched!");
     Ok(connection)
 }

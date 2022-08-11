@@ -11,6 +11,12 @@ create_exception!(
     PyException,
     "Unrecognized message."
 );
+create_exception!(
+    ohmyfpg,
+    PyUnexpectedMessageError,
+    PyException,
+    "Unexpected message."
+);
 create_exception!(ohmyfpg, PyServerError, PyException, "Server error.");
 
 /// Connect to the database and return a `Connection` object.
@@ -41,6 +47,9 @@ impl From<ConnectionError> for PyErr {
             ConnectionError::IOError(err) => PyOSError::new_err(err.to_string()),
             ConnectionError::UnrecognizedMessage(msg_type) => {
                 PyUnrecognizedMessageError::new_err(msg_type)
+            }
+            ConnectionError::UnexpectedMessage(msg) => {
+                PyUnexpectedMessageError::new_err(format!("{:?}", msg))
             }
             ConnectionError::ServerError(err) => PyServerError::new_err(err.to_string()),
         }
