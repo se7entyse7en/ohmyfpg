@@ -1,8 +1,10 @@
 use crate::client::{self, Connection, ConnectionError};
 use futures::future::FutureExt;
 use pyo3::create_exception;
-use pyo3::exceptions::{PyException, PyOSError};
+use pyo3::exceptions::{self, PyException, PyOSError};
 use pyo3::prelude::*;
+use std::sync::Arc;
+use tokio::sync::Mutex;
 
 create_exception!(ohmyfpg, PyInvalidDSNError, PyException, "Invalid DSN.");
 create_exception!(
@@ -31,12 +33,29 @@ pub fn connect(py: Python, dsn: String) -> PyResult<&PyAny> {
 /// Connection object exposed to Python
 #[pyclass(name = "Connection")]
 pub struct PyConnection {
-    _wrappee: Connection,
+    wrappee: Arc<Mutex<Connection>>,
+}
+
+#[pymethods]
+impl PyConnection {
+    fn fetch<'a>(&self, py: Python<'a>, query_string: String) -> PyResult<&'a PyAny> {
+        let mutext_conn = Arc::clone(&self.wrappee);
+        pyo3_asyncio::tokio::future_into_py(py, async move {
+            mutext_conn
+                .lock()
+                .await
+                .fetch(query_string)
+                .await
+                .map_err(|_| exceptions::PyException::new_err("TODO"))
+        })
+    }
 }
 
 impl From<Connection> for PyConnection {
     fn from(conn: Connection) -> Self {
-        PyConnection { _wrappee: conn }
+        PyConnection {
+            wrappee: Arc::new(Mutex::new(conn)),
+        }
     }
 }
 
