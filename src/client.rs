@@ -180,6 +180,20 @@ pub fn parse_dsn(dsn: &str) -> Result<DSN, InvalidDSNError> {
     }
 }
 
+pub type FetchResult = HashMap<String, ColumnResult>;
+
+#[derive(Debug)]
+pub struct ColumnResult {
+    pub bytes: Vec<u8>,
+    pub dtype: String,
+}
+
+impl ColumnResult {
+    pub fn new(bytes: Vec<u8>, dtype: String) -> Self {
+        Self { bytes, dtype }
+    }
+}
+
 pub struct Connection {
     stream: TcpStream,
     pg_types: Option<HashMap<u32, PgType>>,
@@ -227,9 +241,10 @@ impl Connection {
                 loop {
                     match self.read_message().await? {
                         BackendMessage::DataRow(data_row) => data_rows.push(data_row),
-                        BackendMessage::CommandComplete(_) => {
+                        BackendMessage::ReadyForQuery(_) => {
                             break;
                         }
+                        BackendMessage::CommandComplete(_) => {}
                         msg => {
                             error = Some(MessageReadError::UnexpectedMessage(msg));
                             break;
@@ -246,8 +261,67 @@ impl Connection {
         }
     }
 
-    pub async fn fetch(&mut self, _query_string: String) -> Result<(), MessageReadError> {
-        Ok(())
+    pub async fn fetch(&mut self, query_string: String) -> Result<FetchResult, MessageReadError> {
+        let mut fr = FetchResult::new();
+        let (desc, rows) = self.fetch_raw(query_string).await?;
+        let mut cols_meta = vec![];
+        for field in desc.fields {
+            let field_name = field.name;
+            let bytes = Vec::with_capacity(rows.len());
+            let pg_type = self
+                .pg_types
+                .as_ref()
+                .unwrap()
+                .get(&field.data_type_oid)
+                .unwrap();
+            let pg_type_name = pg_type.name.as_str();
+            let dtype_prefix = match pg_type_name {
+                "int2" | "int4" | "int8" => "i".to_owned(),
+                "float4" | "float8" => "f".to_owned(),
+                _ => todo!("{}", format!("Unsopported pg_type: {pg_type_name}")),
+            };
+            let dtype = format!(">{}{}", dtype_prefix, pg_type.size.unwrap());
+
+            cols_meta.push((field_name.to_owned(), pg_type_name));
+            fr.insert(field_name.to_owned(), ColumnResult::new(bytes, dtype));
+        }
+
+        for r in rows {
+            for (i, c) in r.columns.into_iter().enumerate() {
+                // TODO: handle `null`s
+                let raw_str_value = String::from_utf8(c.unwrap()).unwrap();
+
+                match cols_meta[i].1 {
+                    "int2" => {
+                        let bytes = raw_str_value.parse::<i16>().unwrap().to_be_bytes();
+                        let col_res = fr.get_mut(&cols_meta[i].0).unwrap();
+                        col_res.bytes.extend_from_slice(&bytes);
+                    }
+                    "int4" => {
+                        let bytes = raw_str_value.parse::<i32>().unwrap().to_be_bytes();
+                        let col_res = fr.get_mut(&cols_meta[i].0).unwrap();
+                        col_res.bytes.extend_from_slice(&bytes);
+                    }
+                    "int8" => {
+                        let bytes = raw_str_value.parse::<i64>().unwrap().to_be_bytes();
+                        let col_res = fr.get_mut(&cols_meta[i].0).unwrap();
+                        col_res.bytes.extend_from_slice(&bytes);
+                    }
+                    "float4" => {
+                        let bytes = raw_str_value.parse::<f32>().unwrap().to_be_bytes();
+                        let col_res = fr.get_mut(&cols_meta[i].0).unwrap();
+                        col_res.bytes.extend_from_slice(&bytes);
+                    }
+                    "float8" => {
+                        let bytes = raw_str_value.parse::<f64>().unwrap().to_be_bytes();
+                        let col_res = fr.get_mut(&cols_meta[i].0).unwrap();
+                        col_res.bytes.extend_from_slice(&bytes);
+                    }
+                    _ => todo!("{}", format!("Unsopported pg_type: {}", cols_meta[i].1)),
+                };
+            }
+        }
+        Ok(fr)
     }
 }
 
