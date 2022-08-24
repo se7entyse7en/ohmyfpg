@@ -1,5 +1,6 @@
-use crate::client::{self, Connection, ConnectionError};
+use crate::client::{self, ColumnResult, Connection, ConnectionError};
 use futures::future::FutureExt;
+use pyo3::conversion::IntoPy;
 use pyo3::create_exception;
 use pyo3::exceptions::{self, PyException, PyOSError};
 use pyo3::prelude::*;
@@ -36,6 +37,13 @@ pub struct PyConnection {
     wrappee: Arc<Mutex<Connection>>,
 }
 
+impl IntoPy<Py<PyAny>> for ColumnResult {
+    fn into_py(self, py: Python<'_>) -> Py<PyAny> {
+        let tup = (self.bytes.as_slice().into_py(py), self.dtype.into_py(py));
+        tup.into_py(py)
+    }
+}
+
 #[pymethods]
 impl PyConnection {
     fn fetch<'a>(&self, py: Python<'a>, query_string: String) -> PyResult<&'a PyAny> {
@@ -46,6 +54,7 @@ impl PyConnection {
                 .await
                 .fetch(query_string)
                 .await
+                .map(|fr| Python::with_gil(|py| fr.into_py(py)))
                 .map_err(|_| exceptions::PyException::new_err("TODO"))
         })
     }
