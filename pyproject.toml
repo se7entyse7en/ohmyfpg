@@ -31,6 +31,7 @@ repository = "https://github.com/se7entyse7en/ohmyfpg"
 
 [tool.poetry.dependencies]
 python = "^3.8"
+numpy = "^1.23.2"
 
 [tool.poetry.dev-dependencies]
 maturin = "^0.12.20"
