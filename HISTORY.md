@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.1.0 - 2022-08-25](https://github.com/se7entyse7en/semver/compare/v0.0.0...v0.1.0)
+
 ### Added
 
 - Added a `connect` function returning a `Connection` object
