@@ -1,5 +1,5 @@
 __NAME__ = "ohmyfpg"
-__VERSION__ = "0.1.0-dev.19"
+__VERSION__ = "0.1.0-dev.20"
 __DESCRIPTION__ = "Oh My Fast Postgres!"
 
 from typing import Dict
