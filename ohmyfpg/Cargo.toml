@@ -9,14 +9,11 @@ name = "ohmyfpg"
 crate-type = ["cdylib"]
 
 [dependencies]
+ohmyfpg_core = { path = "../ohmyfpg_core" }
 pyo3 = { version = "0.16.5", features = ["extension-module"] }
 pyo3-asyncio = { version = "0.16", features = ["tokio-runtime"] }
 tokio = "1.19.2"
-regex = "1.5"
 futures = "0.3.21"
-getrandom = "0.2.7"
-base64 = "0.13.0"
-scram = "0.6.0"
 
 [package.metadata.maturin]
-python-source = "python"
+python-source = "../python"

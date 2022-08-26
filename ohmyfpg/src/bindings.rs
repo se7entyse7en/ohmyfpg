@@ -1,9 +1,10 @@
-use crate::client::{self, ColumnResult, Connection, ConnectionError};
 use futures::future::FutureExt;
+use ohmyfpg_core::client::{self, ColumnResult, Connection, ConnectionError};
 use pyo3::conversion::IntoPy;
 use pyo3::create_exception;
 use pyo3::exceptions::{self, PyException, PyOSError};
 use pyo3::prelude::*;
+use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
@@ -27,7 +28,10 @@ create_exception!(ohmyfpg, PyServerError, PyException, "Server error.");
 pub fn connect(py: Python, dsn: String) -> PyResult<&PyAny> {
     pyo3_asyncio::tokio::future_into_py(
         py,
-        client::connect(dsn).map(|res| res.map(PyConnection::from).map_err(PyErr::from)),
+        client::connect(dsn).map(|res| {
+            res.map(PyConnection::from)
+                .map_err(|err| PyErr::from(LocalConnectionError(err)))
+        }),
     )
 }
 
@@ -35,13 +39,6 @@ pub fn connect(py: Python, dsn: String) -> PyResult<&PyAny> {
 #[pyclass(name = "Connection")]
 pub struct PyConnection {
     wrappee: Arc<Mutex<Connection>>,
-}
-
-impl IntoPy<Py<PyAny>> for ColumnResult {
-    fn into_py(self, py: Python<'_>) -> Py<PyAny> {
-        let tup = (self.bytes.as_slice().into_py(py), self.dtype.into_py(py));
-        tup.into_py(py)
-    }
 }
 
 #[pymethods]
@@ -54,7 +51,15 @@ impl PyConnection {
                 .await
                 .fetch(query_string)
                 .await
-                .map(|fr| Python::with_gil(|py| fr.into_py(py)))
+                .map(|fr| {
+                    Python::with_gil(|py| {
+                        let local_fr: HashMap<String, LocalColumnResult> = fr
+                            .into_iter()
+                            .map(|v| (v.0, LocalColumnResult(v.1)))
+                            .collect();
+                        local_fr.into_py(py)
+                    })
+                })
                 .map_err(|_| exceptions::PyException::new_err("TODO"))
         })
     }
@@ -68,8 +73,23 @@ impl From<Connection> for PyConnection {
     }
 }
 
-impl From<ConnectionError> for PyErr {
-    fn from(err: ConnectionError) -> Self {
+struct LocalColumnResult(ColumnResult);
+
+impl IntoPy<Py<PyAny>> for LocalColumnResult {
+    fn into_py(self, py: Python<'_>) -> Py<PyAny> {
+        let tup = (
+            self.0.bytes.as_slice().into_py(py),
+            self.0.dtype.into_py(py),
+        );
+        tup.into_py(py)
+    }
+}
+
+struct LocalConnectionError(ConnectionError);
+
+impl From<LocalConnectionError> for PyErr {
+    fn from(local_err: LocalConnectionError) -> Self {
+        let err = local_err.0;
         match err {
             ConnectionError::InvalidDSNError(err) => PyInvalidDSNError::new_err(err.to_string()),
             ConnectionError::IOError(err) => PyOSError::new_err(err.to_string()),
