@@ -234,11 +234,19 @@ dependencies = [
 name = "ohmyfpg"
 version = "0.1.0"
 dependencies = [
- "base64",
  "futures",
- "getrandom",
+ "ohmyfpg_core",
  "pyo3",
  "pyo3-asyncio",
+ "tokio",
+]
+
+[[package]]
+name = "ohmyfpg_core"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "getrandom",
  "regex",
  "scram",
  "tokio",

@@ -50,7 +50,7 @@ jobs:
       - name: Install poetry
         run: pip install poetry
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-root
       - name: flake8
         run: flake8 python/ --statistics;
 
@@ -110,7 +110,7 @@ jobs:
       - name: Install poetry
         run: pip install poetry
       - name: Install dependencies
-        run: poetry install
+        run: poetry install --no-root
       - name: Install Rust toolchain
         uses: actions-rs/toolchain@v1
         with:
@@ -120,7 +120,7 @@ jobs:
       - uses: messense/maturin-action@v1
         with:
           command: build
-          args: --interpreter ${{ matrix.python-version }} --no-sdist -o dist
+          args: --manifest-path ohmyfpg/Cargo.toml --interpreter ${{ matrix.python-version }} -o dist
       - name: Install wheel
         run: pip install dist/*
       - name: pytest
@@ -225,7 +225,7 @@ jobs:
       with:
         manylinux: auto
         command: build
-        args: --interpreter ${{ matrix.python-version }} --release -o dist
+        args: --manifest-path ohmyfpg/Cargo.toml --interpreter ${{ matrix.python-version }} --release --sdist -o dist
     - name: Upload wheels
       uses: actions/upload-artifact@v2
       with:
