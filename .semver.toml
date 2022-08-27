@@ -18,7 +18,7 @@ name = "ohmyfpg"
 version = "{new_version}"
 '''
 
-[semver.files."Cargo.toml"]
+[semver.files."ohmyfpg/Cargo.toml"]
 search = '''
 [package]
 name = "ohmyfpg"
@@ -27,6 +27,18 @@ version = "{current_version}"
 replace = '''
 [package]
 name = "ohmyfpg"
+version = "{new_version}"
+'''
+
+[semver.files."ohmyfpg_core/Cargo.toml"]
+search = '''
+[package]
+name = "ohmyfpg_core"
+version = "{current_version}"
+'''
+replace = '''
+[package]
+name = "ohmyfpg_core"
 version = "{new_version}"
 '''
 
