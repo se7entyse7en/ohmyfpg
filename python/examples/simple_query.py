@@ -1,4 +1,5 @@
 import asyncio
+import time
 
 import ohmyfpg
 
@@ -34,13 +35,19 @@ import ohmyfpg
 
 
 dsn = 'postgres://postgres:postgres@localhost:5432/postgres'
-query = 'SELECT * FROM performance_test LIMIT 100'
+query = 'SELECT * FROM performance_test'
 
 
 async def main():
     """Run main."""
+    t0 = time.time()
     conn = await ohmyfpg.connect(dsn)
+    t1 = time.time()
     await conn.fetch(query)
+    t2 = time.time()
+    print(f"[t1-t0] {int((t1 - t0) * 1000)}ms")
+    print(f"[t2-t1] {int((t2 - t1) * 1000)}ms")
+    print(f"[t2-t0] {int((t2 - t0) * 1000)}ms")
 
 
 asyncio.run(main())

@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+### Changed
+
+- [internal] Split rust part into two workspaces (core + binding) to ease benchmarking and profiling of core
+
 ## [v0.1.0 - 2022-08-25](https://github.com/se7entyse7en/semver/compare/v0.0.0...v0.1.0)
 
 ### Added
