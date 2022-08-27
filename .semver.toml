@@ -6,27 +6,27 @@ default_part = 'minor'
 search = '__VERSION__ = "{current_version}"'
 replace = '__VERSION__ = "{new_version}"'
 
-[semver.files."Cargo.lock"]
+[semver.files."ohmyfpg/Cargo.toml"]
 search = '''
-[[package]]
+[package]
 name = "ohmyfpg"
 version = "{current_version}"
 '''
 replace = '''
-[[package]]
+[package]
 name = "ohmyfpg"
 version = "{new_version}"
 '''
 
-[semver.files."Cargo.toml"]
+[semver.files."ohmyfpg_core/Cargo.toml"]
 search = '''
 [package]
-name = "ohmyfpg"
+name = "ohmyfpg_core"
 version = "{current_version}"
 '''
 replace = '''
 [package]
-name = "ohmyfpg"
+name = "ohmyfpg_core"
 version = "{new_version}"
 '''
 

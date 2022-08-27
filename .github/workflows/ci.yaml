@@ -178,10 +178,14 @@ jobs:
               current_is_dev=$(echo "${current_version}" | { grep dev || true; })
               if [ "${current_is_dev}" == "" ]; then
                 semver bump -c .semver.toml --new-prerelease
+                semver bump -c .semver-cargo-lock.toml --new-prerelease
+                semver bump -c .semver-cargo-lock-core.toml --new-prerelease
                 new_version=$(cat .semver.toml | grep current_version | head -n 1 | cut -c 20- | rev | cut -c 2- | rev)
                 echo "Started a new prerelease: ${new_version}"
               else
                 semver bump -c .semver.toml --part prerelease
+                semver bump -c .semver-cargo-lock.toml --part prerelease
+                semver bump -c .semver-cargo-lock-core.toml --part prerelease
                 new_version=$(cat .semver.toml | grep current_version | head -n 1 | cut -c 20- | rev | cut -c 2- | rev)
                 echo "Bumped to next prerelease: ${new_version}"
               fi
