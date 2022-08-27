@@ -1,11 +1,7 @@
 [semver]
-current_version = '0.1.0'
+current_version = '0.2.0-dev.1'
 last_stable_version = '0.1.0'
 default_part = 'minor'
-[semver.files."python/ohmyfpg/__init__.py"]
-search = '__VERSION__ = "{current_version}"'
-replace = '__VERSION__ = "{new_version}"'
-
 [semver.files."ohmyfpg/Cargo.toml"]
 search = '''
 [package]
@@ -29,6 +25,10 @@ replace = '''
 name = "ohmyfpg_core"
 version = "{new_version}"
 '''
+
+[semver.files."python/ohmyfpg/__init__.py"]
+search = '__VERSION__ = "{current_version}"'
+replace = '__VERSION__ = "{new_version}"'
 
 [semver.files."HISTORY.md"]
 search = '## Unreleased'
