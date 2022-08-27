@@ -6,18 +6,6 @@ default_part = 'minor'
 search = '__VERSION__ = "{current_version}"'
 replace = '__VERSION__ = "{new_version}"'
 
-[semver.files."Cargo.lock"]
-search = '''
-[[package]]
-name = "ohmyfpg"
-version = "{current_version}"
-'''
-replace = '''
-[[package]]
-name = "ohmyfpg"
-version = "{new_version}"
-'''
-
 [semver.files."ohmyfpg/Cargo.toml"]
 search = '''
 [package]
