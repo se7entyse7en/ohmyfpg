@@ -4,7 +4,9 @@
 
 ### Changed
 
+- Renamed `PyInvalidDSNError` -> `PyInvalidDsnError`
 - [internal] Split rust part into two workspaces (core + binding) to ease benchmarking and profiling of core
+- [internal] Add `RawBackendMessage` in order to be able to split backend message identifaction from the full payload parsing
 
 ## [v0.1.0 - 2022-08-25](https://github.com/se7entyse7en/semver/compare/v0.0.0...v0.1.0)
 
