@@ -1,5 +1,7 @@
 use futures::future::FutureExt;
-use ohmyfpg_core::client::{self, ColumnResult, Connection, ConnectionError};
+use ohmyfpg_core::client::{
+    self, ColumnResult, Connection, ConnectionError, FetchError, MessageReadError,
+};
 use pyo3::conversion::IntoPy;
 use pyo3::create_exception;
 use pyo3::exceptions::{self, PyException, PyOSError};
@@ -8,7 +10,7 @@ use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::Mutex;
 
-create_exception!(ohmyfpg, PyInvalidDSNError, PyException, "Invalid DSN.");
+create_exception!(ohmyfpg, PyInvalidDsnError, PyException, "Invalid Dsn.");
 create_exception!(
     ohmyfpg,
     PyUnrecognizedMessageError,
@@ -91,14 +93,18 @@ impl From<LocalConnectionError> for PyErr {
     fn from(local_err: LocalConnectionError) -> Self {
         let err = local_err.0;
         match err {
-            ConnectionError::InvalidDSNError(err) => PyInvalidDSNError::new_err(err.to_string()),
-            ConnectionError::IOError(err) => PyOSError::new_err(err.to_string()),
-            ConnectionError::UnrecognizedMessage(msg_type) => {
-                PyUnrecognizedMessageError::new_err(msg_type)
-            }
-            ConnectionError::UnexpectedMessage(msg) => {
-                PyUnexpectedMessageError::new_err(format!("{:?}", msg))
-            }
+            ConnectionError::InvalidDsnError(err) => PyInvalidDsnError::new_err(err.to_string()),
+            ConnectionError::FetchError(err) => match err {
+                FetchError::MessageReadError(err) => match err {
+                    MessageReadError::UnrecognizedMessageError(err) => {
+                        PyUnrecognizedMessageError::new_err(err.to_string())
+                    }
+                    MessageReadError::IOError(err) => PyOSError::new_err(err.to_string()),
+                },
+                FetchError::UnexpectedMessageError(msg) => {
+                    PyUnexpectedMessageError::new_err(format!("{:?}", msg))
+                }
+            },
             ConnectionError::ServerError(err) => PyServerError::new_err(err.to_string()),
         }
     }

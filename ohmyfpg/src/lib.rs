@@ -7,7 +7,7 @@ fn ohmyfpg(py: Python, m: &PyModule) -> PyResult<()> {
     m.add_class::<bindings::PyConnection>()?;
     m.add(
         "PyInvalidDSNError",
-        py.get_type::<bindings::PyInvalidDSNError>(),
+        py.get_type::<bindings::PyInvalidDsnError>(),
     )?;
     m.add_function(wrap_pyfunction!(bindings::connect, m)?)?;
     Ok(())
