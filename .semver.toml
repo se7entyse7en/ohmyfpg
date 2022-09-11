@@ -1,6 +1,6 @@
 [semver]
-current_version = '0.2.0-dev.6'
-last_stable_version = '0.1.0'
+current_version = '0.2.0'
+last_stable_version = '0.2.0'
 default_part = 'minor'
 [semver.files."pyproject.toml"]
 search = 'version = "{current_version}"'
@@ -14,6 +14,10 @@ replace = '''
 ## [v{new_version} - {utc_today_ymd}](https://github.com/se7entyse7en/semver/compare/v{last_stable_version}...v{new_version})'''
 stable_only = true
 
+[semver.files."python/ohmyfpg/__init__.py"]
+search = '__VERSION__ = "{current_version}"'
+replace = '__VERSION__ = "{new_version}"'
+
 [semver.files."ohmyfpg/Cargo.toml"]
 search = '''
 [package]
@@ -25,10 +29,6 @@ replace = '''
 name = "ohmyfpg"
 version = "{new_version}"
 '''
-
-[semver.files."python/ohmyfpg/__init__.py"]
-search = '__VERSION__ = "{current_version}"'
-replace = '__VERSION__ = "{new_version}"'
 
 [semver.files."ohmyfpg_core/Cargo.toml"]
 search = '''

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+## [v0.2.0 - 2022-09-11](https://github.com/se7entyse7en/semver/compare/v0.1.0...v0.2.0)
+
 ### Added
 
 - Add script to compare performance with `asyncpg`
