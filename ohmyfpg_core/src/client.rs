@@ -44,7 +44,6 @@ impl Connection {
     where
         T: SerializeMessage + fmt::Debug,
     {
-        println!("-> Sending message: {:?}", msg);
         self.framer.write_frame(msg).await
     }
 
@@ -54,9 +53,7 @@ impl Connection {
 
     pub async fn read_message(&mut self) -> Result<BackendMessage, MessageReadError> {
         let raw_message = self.read_raw_message().await?;
-        let be_message = raw_message.parse().map_err(MessageReadError::from);
-        println!("<- Read message: {:?}", be_message);
-        be_message
+        raw_message.parse().map_err(MessageReadError::from)
     }
 
     pub async fn fetch_raw(

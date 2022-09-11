@@ -46,6 +46,9 @@ flake8-builtins = "^1.5.3"
 pytest = "^7.1.2"
 pytest-cov = "^3.0.0"
 ipython = "^8.4.0"
+asyncpg = "^0.26.0"
+pandas = "^1.4.4"
+matplotlib = "^3.5.3"
 
 [tool.isort]
 force_single_line = true

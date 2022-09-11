@@ -42,3 +42,11 @@ RUST_BACKTRACE=1 cargo run -r -p ohmyfpg_core --example simple_query
 ```
 sudo CARGO_PROFILE_BENCH_DEBUG=true RUST_BACKTRACE=1 cargo flamegraph -p ohmyfpg_core --example simple_query
 ```
+
+## Performance comparison
+
+```
+python performance/compare.py
+```
+
+![Performance comparison](performance/performance-comparison.png)
