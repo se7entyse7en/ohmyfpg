@@ -6,10 +6,12 @@ use crate::server::PgType;
 mod dsn;
 use std::collections::HashMap;
 use std::fmt;
-use tokio::io::{self, AsyncReadExt, AsyncWriteExt};
+use tokio::io;
 use tokio::net::TcpStream;
 pub mod error;
+mod framer;
 pub use error::{ConnectionError, FetchError, MessageReadError, ServerError};
+use framer::Framer;
 
 pub type FetchResult = HashMap<String, ColumnResult>;
 
@@ -26,14 +28,14 @@ impl ColumnResult {
 }
 
 pub struct Connection {
-    stream: TcpStream,
+    framer: Framer,
     pg_types: Option<HashMap<u32, PgType>>,
 }
 
 impl Connection {
     pub fn new(stream: TcpStream) -> Self {
         Connection {
-            stream,
+            framer: Framer::new(stream),
             pg_types: None,
         }
     }
@@ -43,24 +45,18 @@ impl Connection {
         T: SerializeMessage + fmt::Debug,
     {
         println!("-> Sending message: {:?}", msg);
-        self.stream.write_all(&msg.serialize()).await
+        self.framer.write_frame(msg).await
     }
 
     pub async fn read_raw_message(&mut self) -> io::Result<RawBackendMessage> {
-        let mut header = [0u8; 5];
-        self.stream.read_exact(&mut header).await?;
-        let type_: [u8; 1] = header[0..1].try_into().unwrap();
-        let count: [u8; 4] = header[1..5].try_into().unwrap();
-        let mut body = vec![0u8; (u32::from_be_bytes(count) - 4).try_into().unwrap()];
-        self.stream.read_exact(&mut body).await?;
-        let resp = RawBackendMessage::new(type_, body);
-        println!("<- Received raw message: {:?}", &resp);
-        Ok(resp)
+        Ok(self.framer.read_frame().await.unwrap())
     }
 
     pub async fn read_message(&mut self) -> Result<BackendMessage, MessageReadError> {
         let raw_message = self.read_raw_message().await?;
-        raw_message.parse().map_err(MessageReadError::from)
+        let be_message = raw_message.parse().map_err(MessageReadError::from);
+        println!("<- Read message: {:?}", be_message);
+        be_message
     }
 
     pub async fn fetch_raw(
