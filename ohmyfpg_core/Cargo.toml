@@ -8,7 +8,7 @@ edition = "2021"
 name = "ohmyfpg_core"
 
 [dependencies]
-tokio = { version = "1.19.2", features = ["io-util", "net"] }
+tokio = { version = "1.19.2", features = ["io-util", "net", "sync"] }
 regex = "1.5"
 getrandom = "0.2.7"
 base64 = "0.13.0"
