@@ -2,7 +2,13 @@
 
 ## Unreleased
 
-## [v0.2.0 - 2022-09-11](https://github.com/se7entyse7en/semver/compare/v0.1.0...v0.2.0)
+## [v0.2.1 - 2022-09-11](https://github.com/se7entyse7en/semver/compare/v0.2.0...v0.2.1)
+
+### Fixed
+
+- Fix version bump of the `Cargo.lock`s files
+
+## [v0.2.0 - 2022-09-11](https://github.com/se7entyse7en/semver/compare/v0.1.0...v0.2.0) [YANKED]
 
 ### Added
 
