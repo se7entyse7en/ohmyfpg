@@ -232,7 +232,7 @@ dependencies = [
 
 [[package]]
 name = "ohmyfpg"
-version = "0.2.0-dev.5"
+version = "0.2.0-dev.6"
 dependencies = [
  "futures",
  "ohmyfpg_core",
@@ -243,7 +243,7 @@ dependencies = [
 
 [[package]]
 name = "ohmyfpg_core"
-version = "0.2.0-dev.5"
+version = "0.2.0-dev.6"
 dependencies = [
  "base64",
  "getrandom",
