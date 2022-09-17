@@ -77,46 +77,102 @@ impl RawBackendMessage {
         RawBackendMessage { type_, body }
     }
 
-    pub fn parse(self) -> Result<BackendMessage, error::UnrecognizedMessageError> {
+    pub fn identify(self) -> Result<RawTypedBackendMessage, error::UnrecognizedMessageError> {
         match &self.type_ {
             authentication::AUTH_MESSAGE_TYPE => {
                 let raw_sub_type: [u8; 4] = self.body[..4].try_into().unwrap();
                 let sub_type = u32::from_be_bytes(raw_sub_type);
                 match sub_type {
-                    10_u32 => Ok(BackendMessage::AuthenticationSASL(
-                        AuthenticationSASL::deserialize_body(self.body),
+                    10_u32 => Ok(RawTypedBackendMessage::AuthenticationSASL(self.body)),
+                    11_u32 => Ok(RawTypedBackendMessage::AuthenticationSASLContinue(
+                        self.body,
                     )),
-                    11_u32 => Ok(BackendMessage::AuthenticationSASLContinue(
-                        AuthenticationSASLContinue::deserialize_body(self.body),
-                    )),
-                    12_u32 => Ok(BackendMessage::AuthenticationSASLFinal(
-                        AuthenticationSASLFinal::deserialize_body(self.body),
-                    )),
-                    0_u32 => Ok(BackendMessage::AuthenticationOk(
-                        AuthenticationOk::deserialize_body(self.body),
-                    )),
+                    12_u32 => Ok(RawTypedBackendMessage::AuthenticationSASLFinal(self.body)),
+                    0_u32 => Ok(RawTypedBackendMessage::AuthenticationOk(self.body)),
                     _ => Err(error::UnrecognizedMessageError::new(self)),
                 }
             }
-            PARAMETER_STATUS_TYPE => {
-                Ok(BackendMessage::ParameterStatus(ParameterStatus::default()))
+            PARAMETER_STATUS_TYPE => Ok(RawTypedBackendMessage::ParameterStatus(self.body)),
+            BACKEND_KEY_DATA_TYPE => Ok(RawTypedBackendMessage::BackendKeyData(self.body)),
+            NOTICE_RESPONSE_TYPE => Ok(RawTypedBackendMessage::NoticeResponse(self.body)),
+            READY_FOR_QUERY_TYPE => Ok(RawTypedBackendMessage::ReadyForQuery(self.body)),
+            ERROR_MESSAGE_TYPE => Ok(RawTypedBackendMessage::ErrorResponse(self.body)),
+            query::ROW_DESCRIPTION_MESSAGE_TYPE => {
+                Ok(RawTypedBackendMessage::RowDescription(self.body))
             }
-            BACKEND_KEY_DATA_TYPE => Ok(BackendMessage::BackendKeyData(BackendKeyData::default())),
-            NOTICE_RESPONSE_TYPE => Ok(BackendMessage::NoticeResponse(NoticeResponse::default())),
-            READY_FOR_QUERY_TYPE => Ok(BackendMessage::ReadyForQuery(ReadyForQuery::default())),
-            ERROR_MESSAGE_TYPE => Ok(BackendMessage::ErrorResponse(
-                ErrorResponse::deserialize_body(self.body),
-            )),
-            query::ROW_DESCRIPTION_MESSAGE_TYPE => Ok(BackendMessage::RowDescription(
-                RowDescription::deserialize_body(self.body),
-            )),
-            query::DATA_ROW_MESSAGE_TYPE => Ok(BackendMessage::DataRow(DataRow::deserialize_body(
-                self.body,
-            ))),
-            query::COMMAND_COMPLETE_MESSAGE_TYPE => Ok(BackendMessage::CommandComplete(
-                CommandComplete::deserialize_body(self.body),
-            )),
+            query::DATA_ROW_MESSAGE_TYPE => Ok(RawTypedBackendMessage::DataRow(self.body)),
+            query::COMMAND_COMPLETE_MESSAGE_TYPE => {
+                Ok(RawTypedBackendMessage::CommandComplete(self.body))
+            }
             _ => Err(error::UnrecognizedMessageError::new(self)),
+        }
+    }
+
+    pub fn parse(self) -> Result<BackendMessage, error::UnrecognizedMessageError> {
+        Ok(self.identify()?.parse())
+    }
+}
+
+#[derive(Debug)]
+pub enum RawTypedBackendMessage {
+    AuthenticationSASL(Vec<u8>),
+    AuthenticationSASLContinue(Vec<u8>),
+    AuthenticationSASLFinal(Vec<u8>),
+    AuthenticationOk(Vec<u8>),
+    ErrorResponse(Vec<u8>),
+    ParameterStatus(Vec<u8>),
+    BackendKeyData(Vec<u8>),
+    NoticeResponse(Vec<u8>),
+    ReadyForQuery(Vec<u8>),
+    RowDescription(Vec<u8>),
+    DataRow(Vec<u8>),
+    CommandComplete(Vec<u8>),
+}
+
+impl RawTypedBackendMessage {
+    pub fn parse(self) -> BackendMessage {
+        match self {
+            RawTypedBackendMessage::AuthenticationSASL(body) => {
+                BackendMessage::AuthenticationSASL(AuthenticationSASL::deserialize_body(body))
+            }
+            RawTypedBackendMessage::AuthenticationSASLContinue(body) => {
+                BackendMessage::AuthenticationSASLContinue(
+                    AuthenticationSASLContinue::deserialize_body(body),
+                )
+            }
+            RawTypedBackendMessage::AuthenticationSASLFinal(body) => {
+                BackendMessage::AuthenticationSASLFinal(AuthenticationSASLFinal::deserialize_body(
+                    body,
+                ))
+            }
+            RawTypedBackendMessage::AuthenticationOk(body) => {
+                BackendMessage::AuthenticationOk(AuthenticationOk::deserialize_body(body))
+            }
+
+            RawTypedBackendMessage::ErrorResponse(body) => {
+                BackendMessage::ErrorResponse(ErrorResponse::deserialize_body(body))
+            }
+            RawTypedBackendMessage::ParameterStatus(_) => {
+                BackendMessage::ParameterStatus(ParameterStatus::default())
+            }
+            RawTypedBackendMessage::BackendKeyData(_) => {
+                BackendMessage::BackendKeyData(BackendKeyData::default())
+            }
+            RawTypedBackendMessage::NoticeResponse(_) => {
+                BackendMessage::NoticeResponse(NoticeResponse::default())
+            }
+            RawTypedBackendMessage::ReadyForQuery(_) => {
+                BackendMessage::ReadyForQuery(ReadyForQuery::default())
+            }
+            RawTypedBackendMessage::RowDescription(body) => {
+                BackendMessage::RowDescription(RowDescription::deserialize_body(body))
+            }
+            RawTypedBackendMessage::DataRow(body) => {
+                BackendMessage::DataRow(DataRow::deserialize_body(body))
+            }
+            RawTypedBackendMessage::CommandComplete(body) => {
+                BackendMessage::CommandComplete(CommandComplete::deserialize_body(body))
+            }
         }
     }
 }
