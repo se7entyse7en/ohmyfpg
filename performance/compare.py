@@ -34,7 +34,9 @@ class Runner:
         print('Connecting...')
         conn = await self.connect(dsn)
         print('Heating...')
-        await self.heat(conn, query)
+        for i in range(self._heat_runs):
+            await self.heat(conn, query)
+
         times = []
         print('Executing...')
         for i in range(self._runs):
