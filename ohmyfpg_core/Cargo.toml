@@ -13,6 +13,7 @@ regex = "1.5"
 getrandom = "0.2.7"
 base64 = "0.13.0"
 scram = "0.6.0"
+rayon = "1.5.3"
 
 [dev-dependencies]
 tokio = { version = "1.19.2", features = ["io-util", "net", "rt", "rt-multi-thread", "macros"] }

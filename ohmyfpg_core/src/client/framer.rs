@@ -101,9 +101,8 @@ impl ReadFramer {
                         }
                     }
 
-                    match io_rx.recv().await {
-                        Some(msg) => buf.extend(msg),
-                        None => (),
+                    if let Some(msg) = io_rx.recv().await {
+                        buf.extend(msg)
                     }
                 }
             }

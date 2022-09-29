@@ -8,8 +8,8 @@ import matplotlib.pyplot as plt
 
 
 TEST_RUNS = 30
-HEAT_RUNS = 3
-DSN = 'postgres://postgres:postgres@localhost:5432/postgres'
+HEAT_RUNS = 1
+DSN = 'postgres://postgres:postgres@postgres:5432/postgres'
 QUERY = 'SELECT * FROM performance_test'
 
 
@@ -34,7 +34,9 @@ class Runner:
         print('Connecting...')
         conn = await self.connect(dsn)
         print('Heating...')
-        await self.heat(conn, query)
+        for i in range(self._heat_runs):
+            await self.heat(conn, query)
+
         times = []
         print('Executing...')
         for i in range(self._runs):

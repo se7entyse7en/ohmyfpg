@@ -1,0 +1,23 @@
+FROM python:3.10
+
+WORKDIR /usr/src/app
+
+COPY Cargo.toml Cargo.lock ./
+COPY pyproject.toml poetry.lock ./
+
+RUN curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+RUN pip install poetry
+RUN poetry config virtualenvs.in-project true && poetry install --no-interaction --no-root
+
+ENV PATH="/root/.cargo/bin:${PATH}"
+
+COPY ohmyfpg_core ./ohmyfpg_core
+COPY ohmyfpg ./ohmyfpg
+COPY README.md LICENSE ./
+
+RUN poetry run maturin develop --release --manifest-path ohmyfpg/Cargo.toml
+
+COPY python ./python
+COPY performance ./performance
+
+CMD poetry run python ./performance/compare.py && sleep infinity
