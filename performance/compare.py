@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 
 TEST_RUNS = 30
 HEAT_RUNS = 3
-DSN = 'postgres://postgres:postgres@localhost:5432/postgres'
+DSN = 'postgres://postgres:postgres@postgres:5432/postgres'
 QUERY = 'SELECT * FROM performance_test'
 
 
