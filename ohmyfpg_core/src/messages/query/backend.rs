@@ -1,4 +1,5 @@
 use crate::messages::DeserializeMessage;
+use bytes::{Buf, Bytes};
 
 pub const ROW_DESCRIPTION_MESSAGE_TYPE: &[u8; 1] = b"T";
 pub const DATA_ROW_MESSAGE_TYPE: &[u8; 1] = b"D";
@@ -58,29 +59,29 @@ impl DeserializeMessage for RowDescription {
 
 #[derive(Debug)]
 pub struct DataRow {
-    pub columns: Vec<Option<Vec<u8>>>,
+    pub columns: Vec<Option<Bytes>>,
 }
 
 impl DataRow {
-    pub fn new(columns: Vec<Option<Vec<u8>>>) -> Self {
+    pub fn new(columns: Vec<Option<Bytes>>) -> Self {
         DataRow { columns }
     }
 }
 
 impl DeserializeMessage for DataRow {
-    fn deserialize_body(body: Vec<u8>) -> Self {
+    fn deserialize_body(body_: Vec<u8>) -> Self {
+        // TODO: Change DeserializeMessage::deserialize_body to accept `bytes::Bytes`
+        let body = Bytes::from(body_);
         let cols_first_index = 2;
-        let raw_cols_count: [u8; 2] = body[0..cols_first_index].try_into().unwrap();
-        let cols_count = u16::from_be_bytes(raw_cols_count);
+        let cols_count = body.slice(0..cols_first_index).get_u16();
         let cols_values = if cols_count == 0 {
             vec![]
         } else {
             let mut col_idx_start = cols_first_index;
-            let mut cols_values: Vec<Option<Vec<u8>>> = Vec::with_capacity(cols_count.into());
+            let mut cols_values: Vec<Option<Bytes>> = Vec::with_capacity(cols_count.into());
             for _ in 1..cols_count + 1 {
                 let col_idx_end = col_idx_start + 4;
-                let raw_value_len: [u8; 4] = body[col_idx_start..col_idx_end].try_into().unwrap();
-                let value_len = i32::from_be_bytes(raw_value_len);
+                let value_len = body.slice(col_idx_start..col_idx_end).get_i32();
 
                 if value_len < 0 {
                     cols_values.push(None);
@@ -88,7 +89,7 @@ impl DeserializeMessage for DataRow {
                 } else {
                     let value_idx_start: usize = col_idx_end;
                     let value_idx_end: usize = value_idx_start + value_len as usize;
-                    cols_values.push(Some(body[value_idx_start..value_idx_end].to_vec()));
+                    cols_values.push(Some(body.slice(value_idx_start..value_idx_end)));
                     col_idx_start = col_idx_end + value_len as usize;
                 }
             }

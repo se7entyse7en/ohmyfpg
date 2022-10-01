@@ -9,7 +9,7 @@ use crate::server::PgType;
 use rayon::prelude::*;
 mod dsn;
 use std::collections::HashMap;
-use std::fmt;
+use std::{fmt, str};
 use tokio::io;
 use tokio::net::TcpStream;
 pub mod error;
@@ -133,7 +133,8 @@ impl Connection {
                 |mut acc: HashMap<String, Vec<u8>>, dr: DataRow| {
                     for (i, c) in dr.columns.into_iter().enumerate() {
                         // TODO: handle `null`s
-                        let raw_str_value = String::from_utf8(c.unwrap()).unwrap();
+                        let raw_str_bytes = &c.unwrap();
+                        let raw_str_value = str::from_utf8(raw_str_bytes).unwrap();
                         let value = match cols_meta[i].1 {
                             "int2" => raw_str_value.parse::<i16>().unwrap().to_be_bytes().to_vec(),
                             "int4" => raw_str_value.parse::<i32>().unwrap().to_be_bytes().to_vec(),
@@ -220,9 +221,9 @@ WHERE typname IN (
         let raw_name = dr.columns[1].take().unwrap();
         let raw_size = dr.columns[2].take().unwrap();
 
-        let s_oid = String::from_utf8(raw_oid).unwrap();
-        let name = String::from_utf8(raw_name).unwrap();
-        let s_size = String::from_utf8(raw_size).unwrap();
+        let s_oid = String::from_utf8(raw_oid.to_vec()).unwrap();
+        let name = String::from_utf8(raw_name.to_vec()).unwrap();
+        let s_size = String::from_utf8(raw_size.to_vec()).unwrap();
 
         let oid: u32 = s_oid.parse().unwrap();
         let size: Option<u8> = match s_size.as_str() {
