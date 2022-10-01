@@ -130,7 +130,7 @@ impl Connection {
             .map(DataRow::deserialize_body)
             .fold(
                 HashMap::new,
-                |mut acc: HashMap<String, Vec<u8>>, dr: DataRow| {
+                |mut acc: HashMap<&str, Vec<u8>>, dr: DataRow| {
                     for (i, c) in dr.columns.into_iter().enumerate() {
                         // TODO: handle `null`s
                         let raw_str_bytes = &c.unwrap();
@@ -149,22 +149,22 @@ impl Connection {
                         };
 
                         let field_name = index_field_map.get(&i).unwrap();
-                        let entry = acc.entry(field_name.to_owned());
+                        let entry = acc.entry(field_name);
                         entry.or_default().extend(value);
                     }
                     acc
                 },
             )
-            .collect::<Vec<HashMap<String, Vec<u8>>>>();
+            .collect::<Vec<HashMap<&str, Vec<u8>>>>();
 
         let mut fr = FetchResult::new();
         for col_meta in cols_meta {
-            let field_name = &col_meta.0;
+            let field_name = col_meta.0;
             let dtype = &col_meta.2;
             let mut col_res = ColumnResult::new(Vec::with_capacity(total_rows), dtype.to_string());
 
             for chunk in &chunks {
-                let value = chunk.get(field_name).unwrap();
+                let value = chunk.get(&field_name as &str).unwrap();
                 col_res.bytes.extend_from_slice(value);
             }
 
