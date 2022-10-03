@@ -86,7 +86,7 @@ impl ReadFramer {
 
         let framer_handle = task::spawn({
             async move {
-                let mut buf: Vec<u8> = vec![];
+                let mut buf: Vec<u8> = Vec::with_capacity(IO_READ_BUFFER_SIZE);
                 loop {
                     if buf.len() >= FRAME_HEADER_SIZE {
                         let type_: [u8; 1] = buf[0..1].try_into().unwrap();

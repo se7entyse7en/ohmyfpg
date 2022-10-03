@@ -9,7 +9,7 @@ use crate::server::PgType;
 use rayon::prelude::*;
 mod dsn;
 use std::collections::HashMap;
-use std::fmt;
+use std::{fmt, str};
 use tokio::io;
 use tokio::net::TcpStream;
 pub mod error;
@@ -130,10 +130,11 @@ impl Connection {
             .map(DataRow::deserialize_body)
             .fold(
                 HashMap::new,
-                |mut acc: HashMap<String, Vec<u8>>, dr: DataRow| {
+                |mut acc: HashMap<&str, Vec<u8>>, dr: DataRow| {
                     for (i, c) in dr.columns.into_iter().enumerate() {
                         // TODO: handle `null`s
-                        let raw_str_value = String::from_utf8(c.unwrap()).unwrap();
+                        let raw_str_bytes = &c.unwrap();
+                        let raw_str_value = str::from_utf8(raw_str_bytes).unwrap();
                         let value = match cols_meta[i].1 {
                             "int2" => raw_str_value.parse::<i16>().unwrap().to_be_bytes().to_vec(),
                             "int4" => raw_str_value.parse::<i32>().unwrap().to_be_bytes().to_vec(),
@@ -148,22 +149,22 @@ impl Connection {
                         };
 
                         let field_name = index_field_map.get(&i).unwrap();
-                        let entry = acc.entry(field_name.to_owned());
+                        let entry = acc.entry(field_name);
                         entry.or_default().extend(value);
                     }
                     acc
                 },
             )
-            .collect::<Vec<HashMap<String, Vec<u8>>>>();
+            .collect::<Vec<HashMap<&str, Vec<u8>>>>();
 
         let mut fr = FetchResult::new();
         for col_meta in cols_meta {
-            let field_name = &col_meta.0;
+            let field_name = col_meta.0;
             let dtype = &col_meta.2;
             let mut col_res = ColumnResult::new(Vec::with_capacity(total_rows), dtype.to_string());
 
             for chunk in &chunks {
-                let value = chunk.get(field_name).unwrap();
+                let value = chunk.get(&field_name as &str).unwrap();
                 col_res.bytes.extend_from_slice(value);
             }
 
@@ -220,9 +221,9 @@ WHERE typname IN (
         let raw_name = dr.columns[1].take().unwrap();
         let raw_size = dr.columns[2].take().unwrap();
 
-        let s_oid = String::from_utf8(raw_oid).unwrap();
-        let name = String::from_utf8(raw_name).unwrap();
-        let s_size = String::from_utf8(raw_size).unwrap();
+        let s_oid = String::from_utf8(raw_oid.to_vec()).unwrap();
+        let name = String::from_utf8(raw_name.to_vec()).unwrap();
+        let s_size = String::from_utf8(raw_size.to_vec()).unwrap();
 
         let oid: u32 = s_oid.parse().unwrap();
         let size: Option<u8> = match s_size.as_str() {
