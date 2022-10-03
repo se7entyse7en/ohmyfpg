@@ -41,7 +41,7 @@ The image below compares the performance of `ohmyfpg` with `asyncpg`. The 4 bars
 - `ohmyfpg`: plain fetch,
 - `asyncpg`: plain fetch,
 - `ohmyfpg-pandas`: plain fetch + conversion to `pandas` Dataframe,
-- `asyncpg`: plain fetch + conversion to `pandas` Dataframe,
+- `asyncpg-pandas`: plain fetch + conversion to `pandas` Dataframe,
 
 See details [here](performance/compare.py), especially how the conversion to `pandas` Dataframe has been implemented.
 
@@ -56,45 +56,46 @@ It has been run inside docker with 8 CPU and 8GB of RAM allocated to the daemon 
 
 ### Detailed summary
 
-Plain fetch:
+Plain fetch (26.5% or 1.2x faster):
 ```
 --------------------------------------------------
 ohmyfpg
-avg: 1045.8ms
-min: 898ms
-p25: 960.75ms
-median: 1041.5ms
-p75: 1083.0ms
-max: 1421ms
+avg: 953.8ms
+min: 877ms
+p25: 915.25ms
+median: 946.5ms
+p75: 988.75ms
+max: 1066ms
 --------------------------------------------------
 asyncpg
-avg: 1194.9ms
-min: 1037ms
-p25: 1080.5ms
-median: 1224.0ms
-p75: 1259.75ms
-max: 1567ms
+avg: 1355.1ms
+min: 1069ms
+p25: 1169.0ms
+median: 1288.0ms
+p75: 1325.5ms
+max: 3178ms
 --------------------------------------------------
 ```
 
-Plain fetch + conversion to `pandas` Dataframe:
+Plain fetch + conversion to `pandas` Dataframe (68.7% or 3.2x faster):
 ```
 --------------------------------------------------
 ohmyfpg-pandas
-avg: 1212.3ms
-min: 1131ms
-p25: 1166.5ms
-median: 1192.0ms
-p75: 1220.75ms
-max: 1724ms
+avg: 1186.9666666666667ms
+min: 1076ms
+p25: 1160.75ms
+median: 1191.5ms
+p75: 1213.5ms
+max: 1325ms
+--------------------------------------------------
 --------------------------------------------------
 asyncpg-pandas
-avg: 4013.0333333333333ms
-min: 3771ms
-p25: 3841.25ms
-median: 3912.5ms
-p75: 4124.5ms
-max: 4708ms
+avg: 4636.066666666667ms
+min: 3633ms
+p25: 3704.0ms
+median: 3803.5ms
+p75: 4006.5ms
+max: 22829ms
 --------------------------------------------------
 ```
 
@@ -105,6 +106,7 @@ This library is highly experimental and has many limitations:
 - no support for non-numerical types,
 - limited support for authentication,
 - no proper logging,
+- no support for insert operations,
 - etc.
 
 ## Development
@@ -181,4 +183,8 @@ sudo CARGO_PROFILE_BENCH_DEBUG=true RUST_BACKTRACE=1 cargo flamegraph -p ohmyfpg
 
 ```
 CARGO_PROFILE_BENCH_DEBUG=true RUST_BACKTRACE=1 cargo instruments --release -p ohmyfpg_core --example simple_query -t time
+```
+
+```
+CARGO_PROFILE_BENCH_DEBUG=true RUST_BACKTRACE=1 cargo instruments --release -p ohmyfpg_core --example simple_query -t Allocations
 ```
