@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+### Changed
+
+- Reduced `malloc`s by ~55% for `simple_query` example
+- [internal] Replace `Vec<u8>` with `bytes` in the hottest places
+
 ## [v0.3.0 - 2022-09-29](https://github.com/se7entyse7en/semver/compare/v0.2.1...v0.3.0)
 
 ### Changed
