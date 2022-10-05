@@ -2,6 +2,7 @@ use crate::messages::{SerializeMessage, SerializeMessageBytes};
 
 const QUERY_MESSAGE_TYPE: &[u8; 1] = b"Q";
 const PARSE_MESSAGE_TYPE: &[u8; 1] = b"P";
+const FLUSH_MESSAGE_TYPE: &[u8; 1] = b"H";
 
 #[derive(Debug)]
 pub struct Query {
@@ -47,5 +48,30 @@ impl SerializeMessage for Parse {
         body.append(&mut self.query_string.to_msg_bytes());
         body.append(&mut 0u16.to_msg_bytes());
         body
+    }
+}
+
+#[derive(Debug)]
+pub struct Flush {}
+
+impl Flush {
+    fn new() -> Self {
+        Flush {}
+    }
+}
+
+impl Default for Flush {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SerializeMessage for Flush {
+    fn get_msg_type(&self) -> Option<&[u8; 1]> {
+        Some(FLUSH_MESSAGE_TYPE)
+    }
+
+    fn serialize_body(self) -> Vec<u8> {
+        vec![]
     }
 }
