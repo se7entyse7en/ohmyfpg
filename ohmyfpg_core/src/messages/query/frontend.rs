@@ -5,6 +5,7 @@ const PARSE_MESSAGE_TYPE: &[u8; 1] = b"P";
 const FLUSH_MESSAGE_TYPE: &[u8; 1] = b"H";
 const BIND_MESSAGE_TYPE: &[u8; 1] = b"B";
 const DESCRIBE_MESSAGE_TYPE: &[u8; 1] = b"D";
+const EXECUTE_MESSAGE_TYPE: &[u8; 1] = b"E";
 
 #[derive(Debug)]
 pub struct Query {
@@ -146,6 +147,35 @@ impl SerializeMessage for Describe {
         let mut portal_name = "".to_string().to_msg_bytes();
         body.append(&mut description_type.as_bytes().to_vec());
         body.append(&mut portal_name);
+        body
+    }
+}
+
+#[derive(Debug)]
+pub struct Execute {}
+
+impl Execute {
+    fn new() -> Self {
+        Execute {}
+    }
+}
+
+impl Default for Execute {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SerializeMessage for Execute {
+    fn get_msg_type(&self) -> Option<&[u8; 1]> {
+        Some(EXECUTE_MESSAGE_TYPE)
+    }
+
+    fn serialize_body(self) -> Vec<u8> {
+        let mut body = vec![];
+        let mut portal_name = "".to_string().to_msg_bytes();
+        body.append(&mut portal_name);
+        body.append(&mut 0u32.to_msg_bytes());
         body
     }
 }
