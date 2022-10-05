@@ -4,6 +4,7 @@ const QUERY_MESSAGE_TYPE: &[u8; 1] = b"Q";
 const PARSE_MESSAGE_TYPE: &[u8; 1] = b"P";
 const FLUSH_MESSAGE_TYPE: &[u8; 1] = b"H";
 const BIND_MESSAGE_TYPE: &[u8; 1] = b"B";
+const DESCRIBE_MESSAGE_TYPE: &[u8; 1] = b"D";
 
 #[derive(Debug)]
 pub struct Query {
@@ -115,6 +116,36 @@ impl SerializeMessage for Bind {
         body.append(&mut 1u16.to_msg_bytes());
         body.append(&mut format.to_msg_bytes());
 
+        body
+    }
+}
+
+#[derive(Debug)]
+pub struct Describe {}
+
+impl Describe {
+    fn new() -> Self {
+        Describe {}
+    }
+}
+
+impl Default for Describe {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl SerializeMessage for Describe {
+    fn get_msg_type(&self) -> Option<&[u8; 1]> {
+        Some(DESCRIBE_MESSAGE_TYPE)
+    }
+
+    fn serialize_body(self) -> Vec<u8> {
+        let mut body = vec![];
+        let description_type = "P";
+        let mut portal_name = "".to_string().to_msg_bytes();
+        body.append(&mut description_type.as_bytes().to_vec());
+        body.append(&mut portal_name);
         body
     }
 }
