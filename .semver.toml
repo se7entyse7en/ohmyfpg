@@ -35,7 +35,7 @@ search = '## Unreleased'
 replace = '''
 ## Unreleased
 
-## [v{new_version} - {utc_today_ymd}](https://github.com/se7entyse7en/semver/compare/v{last_stable_version}...v{new_version})'''
+## [v{new_version} - {utc_today_ymd}](https://github.com/se7entyse7en/ohmyfpg/compare/v{last_stable_version}...v{new_version})'''
 stable_only = true
 
 [semver.files."python/ohmyfpg/__init__.py"]

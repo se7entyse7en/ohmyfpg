@@ -2,24 +2,28 @@
 
 ## Unreleased
 
+### Added
+
+- Added comparison agains `psycopg`
+
 ### Changed
 
 - Reduced `malloc`s by ~55% for `simple_query` example
 - [internal] Replace `Vec<u8>` with `bytes` in the hottest places
 
-## [v0.3.0 - 2022-09-29](https://github.com/se7entyse7en/semver/compare/v0.2.1...v0.3.0)
+## [v0.3.0 - 2022-09-29](https://github.com/se7entyse7en/ohmyfpg/compare/v0.2.1...v0.3.0)
 
 ### Changed
 
 - Improved performance and added proper comparison against `asyncpg`
 
-## [v0.2.1 - 2022-09-11](https://github.com/se7entyse7en/semver/compare/v0.2.0...v0.2.1)
+## [v0.2.1 - 2022-09-11](https://github.com/se7entyse7en/ohmyfpg/compare/v0.2.0...v0.2.1)
 
 ### Fixed
 
 - Fix version bump of the `Cargo.lock`s files
 
-## [v0.2.0 - 2022-09-11](https://github.com/se7entyse7en/semver/compare/v0.1.0...v0.2.0) [YANKED]
+## [v0.2.0 - 2022-09-11](https://github.com/se7entyse7en/ohmyfpg/compare/v0.1.0...v0.2.0) [YANKED]
 
 ### Added
 
@@ -33,7 +37,7 @@
 - Improved performance by reading buffer eagerly instead of two syscalls (header + body) per message
 - [internal] Split rust part into two workspaces (core + binding) to ease benchmarking and profiling of core
 
-## [v0.1.0 - 2022-08-25](https://github.com/se7entyse7en/semver/compare/v0.0.0...v0.1.0)
+## [v0.1.0 - 2022-08-25](https://github.com/se7entyse7en/ohmyfpg/compare/v0.0.0...v0.1.0)
 
 ### Added
 
