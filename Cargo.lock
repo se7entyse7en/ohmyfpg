@@ -292,7 +292,7 @@ dependencies = [
 
 [[package]]
 name = "ohmyfpg"
-version = "0.4.0-dev.2"
+version = "0.4.0-dev.3"
 dependencies = [
  "futures",
  "ohmyfpg_core",
@@ -303,7 +303,7 @@ dependencies = [
 
 [[package]]
 name = "ohmyfpg_core"
-version = "0.4.0-dev.2"
+version = "0.4.0-dev.3"
 dependencies = [
  "base64",
  "bytes",

@@ -1,5 +1,5 @@
 [semver]
-current_version = '0.4.0-dev.2'
+current_version = '0.4.0-dev.3'
 last_stable_version = '0.3.0'
 default_part = 'minor'
 [semver.files."Cargo.lock"]
