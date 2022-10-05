@@ -4,6 +4,7 @@ use bytes::{Buf, Bytes};
 pub const ROW_DESCRIPTION_MESSAGE_TYPE: &[u8; 1] = b"T";
 pub const DATA_ROW_MESSAGE_TYPE: &[u8; 1] = b"D";
 pub const COMMAND_COMPLETE_MESSAGE_TYPE: &[u8; 1] = b"C";
+pub const PARSE_COMPLETE_MESSAGE_TYPE: &[u8; 1] = b"1";
 
 #[derive(Debug)]
 pub struct FieldDescription {
@@ -114,5 +115,26 @@ impl CommandComplete {
 impl DeserializeMessage for CommandComplete {
     fn deserialize_body(body: Vec<u8>) -> Self {
         CommandComplete::new(String::from_utf8(body[..body.len() - 1].to_vec()).unwrap())
+    }
+}
+
+#[derive(Debug)]
+pub struct ParseComplete {}
+
+impl ParseComplete {
+    fn new() -> Self {
+        ParseComplete {}
+    }
+}
+
+impl Default for ParseComplete {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DeserializeMessage for ParseComplete {
+    fn deserialize_body(_body: Vec<u8>) -> Self {
+        ParseComplete::new()
     }
 }

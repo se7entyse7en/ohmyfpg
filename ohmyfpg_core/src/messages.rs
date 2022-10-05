@@ -6,7 +6,7 @@ pub mod startup;
 use authentication::{
     AuthenticationOk, AuthenticationSASL, AuthenticationSASLContinue, AuthenticationSASLFinal,
 };
-use query::{CommandComplete, DataRow, RowDescription};
+use query::{CommandComplete, DataRow, ParseComplete, RowDescription};
 use std;
 use std::collections::HashMap;
 
@@ -104,6 +104,9 @@ impl RawBackendMessage {
             query::COMMAND_COMPLETE_MESSAGE_TYPE => {
                 Ok(RawTypedBackendMessage::CommandComplete(self.body))
             }
+            query::PARSE_COMPLETE_MESSAGE_TYPE => {
+                Ok(RawTypedBackendMessage::ParseComplete(self.body))
+            }
             _ => Err(error::UnrecognizedMessageError::new(self)),
         }
     }
@@ -127,6 +130,7 @@ pub enum RawTypedBackendMessage {
     RowDescription(Vec<u8>),
     DataRow(Vec<u8>),
     CommandComplete(Vec<u8>),
+    ParseComplete(Vec<u8>),
 }
 
 impl RawTypedBackendMessage {
@@ -173,6 +177,9 @@ impl RawTypedBackendMessage {
             RawTypedBackendMessage::CommandComplete(body) => {
                 BackendMessage::CommandComplete(CommandComplete::deserialize_body(body))
             }
+            RawTypedBackendMessage::ParseComplete(body) => {
+                BackendMessage::ParseComplete(ParseComplete::deserialize_body(body))
+            }
         }
     }
 }
@@ -191,6 +198,7 @@ pub enum BackendMessage {
     RowDescription(RowDescription),
     DataRow(DataRow),
     CommandComplete(CommandComplete),
+    ParseComplete(ParseComplete),
 }
 
 #[derive(Debug)]
