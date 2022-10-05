@@ -5,6 +5,7 @@ pub const ROW_DESCRIPTION_MESSAGE_TYPE: &[u8; 1] = b"T";
 pub const DATA_ROW_MESSAGE_TYPE: &[u8; 1] = b"D";
 pub const COMMAND_COMPLETE_MESSAGE_TYPE: &[u8; 1] = b"C";
 pub const PARSE_COMPLETE_MESSAGE_TYPE: &[u8; 1] = b"1";
+pub const BIND_COMPLETE_MESSAGE_TYPE: &[u8; 1] = b"2";
 
 #[derive(Debug)]
 pub struct FieldDescription {
@@ -136,5 +137,26 @@ impl Default for ParseComplete {
 impl DeserializeMessage for ParseComplete {
     fn deserialize_body(_body: Vec<u8>) -> Self {
         ParseComplete::new()
+    }
+}
+
+#[derive(Debug)]
+pub struct BindComplete {}
+
+impl BindComplete {
+    fn new() -> Self {
+        BindComplete {}
+    }
+}
+
+impl Default for BindComplete {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl DeserializeMessage for BindComplete {
+    fn deserialize_body(_body: Vec<u8>) -> Self {
+        BindComplete::new()
     }
 }
