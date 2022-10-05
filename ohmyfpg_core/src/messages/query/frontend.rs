@@ -3,6 +3,7 @@ use crate::messages::{SerializeMessage, SerializeMessageBytes};
 const QUERY_MESSAGE_TYPE: &[u8; 1] = b"Q";
 const PARSE_MESSAGE_TYPE: &[u8; 1] = b"P";
 const FLUSH_MESSAGE_TYPE: &[u8; 1] = b"H";
+const BIND_MESSAGE_TYPE: &[u8; 1] = b"B";
 
 #[derive(Debug)]
 pub struct Query {
@@ -73,5 +74,47 @@ impl SerializeMessage for Flush {
 
     fn serialize_body(self) -> Vec<u8> {
         vec![]
+    }
+}
+
+#[derive(Debug)]
+pub enum Format {
+    Text,
+    Binary,
+}
+
+#[derive(Debug)]
+pub struct Bind {
+    pub format: Format,
+}
+
+impl Bind {
+    pub fn new(format: Format) -> Self {
+        Bind { format }
+    }
+}
+
+impl SerializeMessage for Bind {
+    fn get_msg_type(&self) -> Option<&[u8; 1]> {
+        Some(BIND_MESSAGE_TYPE)
+    }
+
+    fn serialize_body(self) -> Vec<u8> {
+        let mut body = vec![];
+        let mut portal_name = "".to_string().to_msg_bytes();
+        let mut prepared_stmt_name = "".to_string().to_msg_bytes();
+        let format = match self.format {
+            Format::Text => 0u16,
+            Format::Binary => 1u16,
+        };
+        body.append(&mut portal_name);
+        body.append(&mut prepared_stmt_name);
+        body.append(&mut 1u16.to_msg_bytes());
+        body.append(&mut format.to_msg_bytes());
+        body.append(&mut 0u16.to_msg_bytes());
+        body.append(&mut 1u16.to_msg_bytes());
+        body.append(&mut format.to_msg_bytes());
+
+        body
     }
 }

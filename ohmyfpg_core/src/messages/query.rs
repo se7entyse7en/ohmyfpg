@@ -1,5 +1,5 @@
 mod frontend;
-pub use frontend::{Flush, Parse, Query};
+pub use frontend::{Bind, Flush, Format, Parse, Query};
 mod backend;
 pub use backend::{
     CommandComplete, DataRow, ParseComplete, RowDescription, COMMAND_COMPLETE_MESSAGE_TYPE,
