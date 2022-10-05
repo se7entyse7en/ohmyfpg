@@ -56,46 +56,69 @@ It has been run inside docker with 8 CPU and 8GB of RAM allocated to the daemon 
 
 ### Detailed summary
 
-Plain fetch (26.5% or 1.2x faster):
+#### Plain fetch
+
+- `ohmyfpg` vs. `asyncpg` => **25.3%** (or **1.3x**) faster
+- `ohmyfpg` vs. `psycopg` => **51.0%** (or **2.0x**) faster
+
 ```
 --------------------------------------------------
 ohmyfpg
-avg: 953.8ms
-min: 877ms
-p25: 915.25ms
-median: 946.5ms
-p75: 988.75ms
-max: 1066ms
+avg: 938.0333333333333ms
+min: 886ms
+p25: 909.75ms
+median: 933.5ms
+p75: 970.0ms
+max: 995ms
 --------------------------------------------------
 asyncpg
-avg: 1355.1ms
-min: 1069ms
-p25: 1169.0ms
-median: 1288.0ms
-p75: 1325.5ms
-max: 3178ms
+avg: 1246.4ms
+min: 1110ms
+p25: 1219.75ms
+median: 1249.5ms
+p75: 1291.5ms
+max: 1387ms
+--------------------------------------------------
+psycopg
+avg: 1900.8333333333333ms
+min: 1767ms
+p25: 1842.0ms
+median: 1904.0ms
+p75: 1945.0ms
+max: 2133ms
 --------------------------------------------------
 ```
 
-Plain fetch + conversion to `pandas` Dataframe (68.7% or 3.2x faster):
+#### Plain fetch + conversion to `pandas` Dataframe
+
+- `ohmyfpg-pandas` vs. `asyncpg-pandas` => **55.7%** (or **2.3x**) faster
+- `ohmyfpg-pandas` vs. `psycopg-pandas` => **62.6%** (or **2.7x**) faster
+
 ```
 --------------------------------------------------
 ohmyfpg-pandas
-avg: 1186.9666666666667ms
-min: 1076ms
-p25: 1160.75ms
-median: 1191.5ms
-p75: 1213.5ms
-max: 1325ms
---------------------------------------------------
+avg: 1181.3333333333333ms
+min: 1091ms
+p25: 1147.0ms
+median: 1187.0ms
+p75: 1216.75ms
+max: 1308ms
 --------------------------------------------------
 asyncpg-pandas
-avg: 4636.066666666667ms
-min: 3633ms
-p25: 3704.0ms
-median: 3803.5ms
-p75: 4006.5ms
-max: 22829ms
+avg: 2818.633333333333ms
+min: 2562ms
+p25: 2633.25ms
+median: 2681.5ms
+p75: 2867.75ms
+max: 4333ms
+--------------------------------------------------
+psycopg-pandas
+avg: 3225.866666666667ms
+min: 3002ms
+p25: 3084.25ms
+median: 3176.0ms
+p75: 3290.5ms
+max: 4087ms
 --------------------------------------------------
 ```
 
@@ -110,6 +133,9 @@ This library is highly experimental and has many limitations:
 - etc.
 
 ## Development
+
+<details>
+<summary>Expand</summary>
 
 ### How to run the performance comparison
 
@@ -188,3 +214,4 @@ CARGO_PROFILE_BENCH_DEBUG=true RUST_BACKTRACE=1 cargo instruments --release -p o
 ```
 CARGO_PROFILE_BENCH_DEBUG=true RUST_BACKTRACE=1 cargo instruments --release -p ohmyfpg_core --example simple_query -t Allocations
 ```
+</details>
