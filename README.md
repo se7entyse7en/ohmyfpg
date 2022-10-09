@@ -37,11 +37,13 @@ if __name__ == '__main__':
 
 ## Performance comparison
 
-The image below compares the performance of `ohmyfpg` with `asyncpg`. The 4 bars have the following meaning:
+The image below compares the performance of `ohmyfpg`, `asyncpg`, and `psycopg`. The 6 bars have the following meaning:
 - `ohmyfpg`: plain fetch,
 - `asyncpg`: plain fetch,
+- `psycopg`: plain fetch,
 - `ohmyfpg-pandas`: plain fetch + conversion to `pandas` Dataframe,
 - `asyncpg-pandas`: plain fetch + conversion to `pandas` Dataframe,
+- `psycopg-pandas`: plain fetch + conversion to `pandas` Dataframe,
 
 See details [here](performance/compare.py), especially how the conversion to `pandas` Dataframe has been implemented.
 
@@ -58,67 +60,67 @@ It has been run inside docker with 8 CPU and 8GB of RAM allocated to the daemon 
 
 #### Plain fetch
 
-- `ohmyfpg` vs. `asyncpg` => **25.3%** (or **1.3x**) faster
-- `ohmyfpg` vs. `psycopg` => **51.0%** (or **2.0x**) faster
+- `ohmyfpg` vs. `asyncpg` => **38.4%** (or **1.6x**) faster
+- `ohmyfpg` vs. `psycopg` => **58.0%** (or **2.4x**) faster
 
 ```
 --------------------------------------------------
 ohmyfpg
-avg: 938.0333333333333ms
-min: 886ms
-p25: 909.75ms
-median: 933.5ms
-p75: 970.0ms
-max: 995ms
+avg: 856.2ms
+min: 747ms
+p25: 782.25ms
+median: 819.0ms
+p75: 871.0ms
+max: 1335ms
 --------------------------------------------------
 asyncpg
-avg: 1246.4ms
-min: 1110ms
-p25: 1219.75ms
-median: 1249.5ms
-p75: 1291.5ms
-max: 1387ms
+avg: 1375.3ms
+min: 1136ms
+p25: 1261.75ms
+median: 1330.5ms
+p75: 1406.25ms
+max: 1925ms
 --------------------------------------------------
 psycopg
-avg: 1900.8333333333333ms
-min: 1767ms
-p25: 1842.0ms
-median: 1904.0ms
-p75: 1945.0ms
-max: 2133ms
+avg: 2023.7ms
+min: 1777ms
+p25: 1886.75ms
+median: 1951.0ms
+p75: 2073.0ms
+max: 3039ms
 --------------------------------------------------
 ```
 
 #### Plain fetch + conversion to `pandas` Dataframe
 
-- `ohmyfpg-pandas` vs. `asyncpg-pandas` => **55.7%** (or **2.3x**) faster
-- `ohmyfpg-pandas` vs. `psycopg-pandas` => **62.6%** (or **2.7x**) faster
+- `ohmyfpg-pandas` vs. `asyncpg-pandas` => **64.7%** (or **2.8x**) faster
+- `ohmyfpg-pandas` vs. `psycopg-pandas` => **69.8%** (or **3.3x**) faster
 
 ```
 --------------------------------------------------
 ohmyfpg-pandas
-avg: 1181.3333333333333ms
-min: 1091ms
-p25: 1147.0ms
-median: 1187.0ms
-p75: 1216.75ms
-max: 1308ms
+avg: 970.6666666666666ms
+min: 852ms
+p25: 924.25ms
+median: 948.0ms
+p75: 988.5ms
+max: 1292ms
 --------------------------------------------------
 asyncpg-pandas
-avg: 2818.633333333333ms
-min: 2562ms
-p25: 2633.25ms
-median: 2681.5ms
-p75: 2867.75ms
-max: 4333ms
+avg: 2754.1666666666665ms
+min: 2569ms
+p25: 2642.75ms
+median: 2683.0ms
+p75: 2737.75ms
+max: 4044ms
 --------------------------------------------------
 psycopg-pandas
-avg: 3225.866666666667ms
-min: 3002ms
-p25: 3084.25ms
-median: 3176.0ms
-p75: 3290.5ms
-max: 4087ms
+avg: 3193.6ms
+min: 2945ms
+p25: 3067.0ms
+median: 3141.0ms
+p75: 3236.75ms
+max: 4040ms
 --------------------------------------------------
 ```
 
@@ -130,6 +132,7 @@ This library is highly experimental and has many limitations:
 - limited support for authentication,
 - no proper logging,
 - no support for insert operations,
+- no paremeters support for prepared statements,
 - etc.
 
 ## Development
