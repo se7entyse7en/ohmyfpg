@@ -169,7 +169,7 @@ async def main():
         print(f'max: {stats[6]}ms')
         print('-' * 50)
 
-    fig, ax = plt.subplots(figsize=(12, 6))
+    fig, ax = plt.subplots(figsize=(12, 10))
     ax.set_title('Performance comparison (ms)', fontsize=18)
     ax.boxplot(boxplot_data, labels=boxplot_labels)
     ax.tick_params(axis='both', which='major', labelsize=12)

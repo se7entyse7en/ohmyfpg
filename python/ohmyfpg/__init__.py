@@ -2,6 +2,7 @@ __NAME__ = "ohmyfpg"
 __VERSION__ = "0.4.0-dev.3"
 __DESCRIPTION__ = "Oh My Fast Postgres!"
 
+import sys
 from typing import Dict
 
 import numpy as np
@@ -25,7 +26,15 @@ class Connection(object):
     async def fetch(self, query_string: str) -> Dict[str, np.ndarray]:
         """Return the result of the query as `numpy` columns."""
         res = await self._wrapped_obj.fetch(query_string)
-        return {k: np.frombuffer(v[0], dtype=np.dtype(v[1])) for k, v in res.items()}
+        d = {}
+        for k, v in res.items():
+            arr = np.frombuffer(v[0], dtype=np.dtype(v[1]))
+            if sys.byteorder == 'little':
+                arr = arr.byteswap().newbyteorder()
+
+            d[k] = arr
+
+        return d
 
 
 async def connect(dsn: str) -> Connection:
