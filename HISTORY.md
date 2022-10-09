@@ -4,7 +4,8 @@
 
 ### Added
 
-- Added comparison agains `psycopg`
+- Added comparison against `psycopg`
+- Added initial support to extended query with binary format
 
 ### Changed
 
