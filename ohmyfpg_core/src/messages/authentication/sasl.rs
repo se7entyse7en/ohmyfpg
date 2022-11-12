@@ -47,7 +47,7 @@ pub async fn authenticate(
                     scram.handle_server_final(&sasl_final.server_final).unwrap();
                     match connection.read_message().await? {
                         BackendMessage::AuthenticationOk(_) => {
-                            println!("Auth successfull!");
+                            println!("Auth successful!");
                             Ok(())
                         }
                         _ => todo!("Error"),

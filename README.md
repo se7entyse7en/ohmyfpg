@@ -132,7 +132,7 @@ This library is highly experimental and has many limitations:
 - limited support for authentication,
 - no proper logging,
 - no support for insert operations,
-- no paremeters support for prepared statements,
+- no parameters support for prepared statements,
 - etc.
 
 ## Development
