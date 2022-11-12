@@ -29,7 +29,7 @@
 ### Added
 
 - Add script to compare performance with `asyncpg`
-- [internal] Add `RawBackendMessage` in order to be able to split backend message identifaction from the full payload parsing
+- [internal] Add `RawBackendMessage` in order to be able to split backend message identification from the full payload parsing
 - [internal] Add `Framer` that handles eager reading from tcp stream concurrently
 
 ### Changed
